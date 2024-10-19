@@ -32,7 +32,7 @@ const Profile = () => {
   if (error) return <div>Error fetching profile</div>;
 
   return (
-    <div className="h-full flex flex-col justify-center items-center">
+    <div className="min-h-screen flex flex-col justify-center items-center">
       <div className="bg-white p-8 shadow-lg rounded-2xl w-full max-w-md flex flex-col items-center">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">User Profile</h1>
         {userProfile ? (
