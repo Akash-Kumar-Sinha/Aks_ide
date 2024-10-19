@@ -4,10 +4,14 @@ import Auth from "./pages/Auth";
 import Home from "./pages/Home";
 import AuthProtect from "./utils/AuthProtect";
 import Profile from "./pages/Profile";
+import Header from "./components/Header";
 
 const App = () => {
   return (
     <div className="h-screen bg-zinc-950 text-zinc-100">
+      <AuthProtect>
+        <Header />
+      </AuthProtect>
       <Routes>
         <Route path="/" element={<Auth />} />
         <Route
