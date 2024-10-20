@@ -50,7 +50,7 @@ const Repo: React.FC<RepoProps> = ({ label, description, refLink, title }) => {
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Create Your {title} Template</DialogTitle>
+                    <DialogTitle className="m-2 mb-4 text-center">Create Your {title} Template</DialogTitle>
                     <DialogDescription className="m-2 flex flex-col gap-4">
                       <Input
                         placeholder="Enter Template Name"
