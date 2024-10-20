@@ -1,5 +1,5 @@
 import React, { ReactNode, useState, useEffect } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import axios from "axios";
 
 interface AuthProtectProps {
@@ -9,6 +9,7 @@ interface AuthProtectProps {
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
 const AuthProtect: React.FC<AuthProtectProps> = ({ children }) => {
+  const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -38,13 +39,15 @@ const AuthProtect: React.FC<AuthProtectProps> = ({ children }) => {
     };
 
     verifyToken();
-  }, []);
+  }, [navigate]);
+
+  const allowedPaths = ["/", "/home"];
 
   if (isLoading) {
     return <div>Loading...</div>;
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !allowedPaths.includes(location.pathname)) {
     return <Navigate to="/" replace />;
   }
 

@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 
 import authRoute from "./route/authRoute";
+import repoRoute from "./route/repoRoute";
 
 dotenv.config();
 const app: Express = express();
@@ -34,6 +35,9 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 app.use("/auth", authRoute);
+
+app.use("/repo", repoRoute);
+
 
 app.listen(port, () => {
   console.log(`[server]: Server is running at http://localhost:${port}`);

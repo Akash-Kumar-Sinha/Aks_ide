@@ -16,20 +16,20 @@ model EmailVerification {
   id                String  @id @default(uuid())
   email             String  @unique
   verificationToken String
-  verified      Boolean @default(false)
+  verified          Boolean @default(false)
 }
 
 model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  name          String?
-  emailVerified Boolean @default(false)
+  id             String   @id @default(cuid())
+  email          String   @unique
+  name           String?
+  emailVerified  Boolean  @default(false)
   hashedPassword String?
-  avatar        String?
-  provider      Provider
-  providerId    String  @unique
-  refreshToken  String?
-  accessToken   String
+  avatar         String?
+  provider       Provider
+  providerId     String   @unique
+  refreshToken   String?
+  accessToken    String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -38,10 +38,11 @@ model User {
 }
 
 model Profile {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  avatar    String?
+  id     String  @id @default(cuid())
+  email  String  @unique
+  name   String?
+  avatar String?
+  repoCount Int? @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -50,17 +51,18 @@ model Profile {
   userId String @unique
 
   repositories Repository[]
+  
 }
 
 model Repository {
-  id          String   @id @default(cuid())
-  name        String
-  techStack    String
+  id          String  @id @default(cuid())
+  name        String  @unique
+  techStack   String
   description String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  profile   Profile @relation(fields: [profileId], references: [userId])
-  profileId String @unique
+  profile   Profile @relation(fields: [profileId], references: [id])
+  profileId String 
 }

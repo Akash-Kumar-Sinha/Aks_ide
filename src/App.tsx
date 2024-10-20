@@ -5,6 +5,7 @@ import Home from "./pages/Home";
 import AuthProtect from "./utils/AuthProtect";
 import Profile from "./pages/Profile";
 import Header from "./components/Header";
+import RepoEditor from "./pages/RepoEditor";
 
 const App = () => {
   return (
@@ -29,6 +30,15 @@ const App = () => {
             element={
               <AuthProtect>
                 <Profile />
+              </AuthProtect>
+            }
+          />
+
+          <Route
+            path={`/repo/:repoId`}
+            element={
+              <AuthProtect>
+                <RepoEditor />
               </AuthProtect>
             }
           />

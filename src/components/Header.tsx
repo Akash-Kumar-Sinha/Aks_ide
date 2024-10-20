@@ -20,6 +20,7 @@ const Header = () => {
   }, [userProfile]);
 
   if (loading) return <div>Loading...</div>;
+  if (!userProfile) return;
   if (error) return <div>Error fetching profile</div>;
 
   return (
