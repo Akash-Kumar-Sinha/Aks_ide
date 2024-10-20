@@ -96,7 +96,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="h-full flex flex-col justify-center items-center">
+    <div className="min-h-screen flex flex-col justify-center items-center">
       <div className="bg-white p-8 shadow-lg rounded-2xl w-full max-w-sm flex flex-col items-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">Login</h2>
         {message && <p className="text-red-500 mb-4 font-medium text-xs">{message}</p>}

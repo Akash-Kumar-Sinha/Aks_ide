@@ -32,12 +32,12 @@ const Profile = () => {
   if (error) return <div>Error fetching profile</div>;
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center">
-      <div className="bg-white p-8 shadow-lg rounded-2xl w-full max-w-md flex flex-col items-center">
+    <div className="min-h-screen flex flex-col justify-center items-center bg-zinc-950">
+      <div className="bg-white p-8 shadow-lg rounded-3xl w-full max-w-md flex flex-col items-center">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">User Profile</h1>
         {userProfile ? (
           <div className="w-full">
-            <div className="flex flex-col gap-4 text-left">
+            <div className="flex flex-col gap-4 text-left bg-gray-100 p-4 rounded-xl">
               <p className="text-gray-700">
                 <strong className="text-gray-900">Name:</strong>{" "}
                 {userProfile.name}
@@ -57,7 +57,7 @@ const Profile = () => {
             </div>
             <Button
               onClick={handleLogout}
-              className="mt-6 w-full py-3 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition-all duration-300"
+              className="mt-6 w-full py-3 bg-[#593CA1] text-white font-semibold rounded-2xl hover:bg-[#442d7d] transition-all duration-300 shadow-lg"
             >
               Logout
             </Button>
