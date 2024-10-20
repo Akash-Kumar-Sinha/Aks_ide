@@ -12,12 +12,16 @@ import sendToken from "../controller/sendToken";
 import verifyEmail from "../controller/verifyEmail";
 import createUser from "../controller/createUser";
 import checkEmail from "../controller/checkEmail";
+import changeName from "../controller/changeName";
 
 dotenv.config();
 
 const authRoute = Router();
 
 authRoute.get("/user_profile", protectRoute, getUser);
+
+authRoute.put("/update_name", protectRoute, changeName);
+
 
 authRoute.get(
   "/google",

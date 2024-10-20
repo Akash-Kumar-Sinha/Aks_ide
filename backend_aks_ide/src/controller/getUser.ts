@@ -24,6 +24,12 @@ const getUser = async(req: Request, res: Response) => {
       userId: user.id
     }
   })
+
+  if(!userProfile) {
+    res.status(404).json({ message: "User profile not found" });
+    return
+  }
+  
   res.status(200).json({
     message: `Hello, user with Google ID`,
     user: userProfile,
