@@ -1,8 +1,10 @@
-const FilesSidebar = ({
-  fileStructure,
-}: {
-  fileStructure: Record<string, unknown | null>;
-}) => {
+import React from "react";
+
+interface FileTreeProps {
+  tree: Record<string, unknown | null>;
+}
+
+const FileTree: React.FC<FileTreeProps> = ({ tree }) => {
   const renderFileTree = (tree: Record<string, unknown | null>) => {
     return Object.entries(tree).map(([name, value]) => {
       if (value !== null && typeof value === "object") {
@@ -24,18 +26,7 @@ const FilesSidebar = ({
     });
   };
 
-  return (
-    <div className="w-52 bg-zinc-800 p-2 border-b-2 border-r-2 rounded-r-3xl border-gray-700 overflow-auto">
-      <h2 className="text-white font-semibold">Explorer</h2>
-      <div className="mt-1">
-        {fileStructure && Object.keys(fileStructure).length > 0 ? (
-          renderFileTree(fileStructure)
-        ) : (
-          <div className="text-gray-500">No files found</div>
-        )}
-      </div>
-    </div>
-  );
+  return <>{renderFileTree(tree)}</>;
 };
 
-export default FilesSidebar;
+export default FileTree;

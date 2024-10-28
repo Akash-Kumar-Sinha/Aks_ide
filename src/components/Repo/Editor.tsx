@@ -1,5 +1,5 @@
 import React from "react";
-import FilesSidebar from "./FilesSidebar";
+import FilesSidebar from "./Sidebar/FilesSidebar";
 import Code from "./Code";
 
 const Editor = ({

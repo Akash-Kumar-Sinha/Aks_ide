@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
-import { IoReturnUpBackOutline } from "react-icons/io5";
+import { useLocation, useParams } from "react-router-dom";
 import Editor from "@/components/Repo/Editor";
 import Terminal from "@/components/Repo/Terminal";
 import { socket } from "@/utils/Socket";
 import axios from "axios";
+import Back from "@/components/Back";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -57,9 +57,7 @@ const CodeEditor = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <header className="pb-2 flex justify-between text-blue-400 px-4">
-        <Link to="/home">
-          <IoReturnUpBackOutline size={27} />
-        </Link>
+        <Back/>
         <p className="hover:underline hover:cursor-pointer font-semibold">
           Id: {repoId}
         </p>

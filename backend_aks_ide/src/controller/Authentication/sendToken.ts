@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import nodemailer from "nodemailer";
 
-import { prisma } from "../prismaDb/prismaDb";
-import createToken from "../utils/createTokens";
+import { prisma } from "../../prismaDb/prismaDb";
+import createToken from "../../utils/createTokens";
 
 const EMAIL = process.env.EMAIL;
 const EMAIL_PASSWORD = process.env.EMAIL_PASSWORD;

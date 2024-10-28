@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 
-import { prisma } from "../prismaDb/prismaDb";
-
+import { prisma } from "../../prismaDb/prismaDb";
 
 const verifyEmail = async (req: Request, res: Response) => {
   try {
@@ -19,7 +18,7 @@ const verifyEmail = async (req: Request, res: Response) => {
           email: user.email,
         },
         data: {
-            verified: true,
+          verified: true,
         },
       });
       res.status(200).send("Email verified successfully");

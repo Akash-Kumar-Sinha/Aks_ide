@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { prisma } from "../prismaDb/prismaDb";
+import { prisma } from "../../prismaDb/prismaDb";
 
 const changeName = async (req: Request, res: Response) => {
   try {
