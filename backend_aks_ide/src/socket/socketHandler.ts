@@ -1,5 +1,6 @@
 import path from "path";
 import { Server } from "socket.io";
+import chokidar from 'chokidar';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pty = require("node-pty");
 
@@ -43,6 +44,10 @@ export const setupSocket = (io: Server) => {
       } else {
         console.log("Incomplete folder data received");
       }
+    });
+
+    chokidar.watch(resolvedPath).on('all', (event, path) => {
+      io.emit('file_refresh', { path });
     });
 
     socket.on("terminal_write", (data: string) => {

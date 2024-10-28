@@ -16,28 +16,36 @@ const CodeEditor = () => {
   >({});
   const [userFolderName, setUserFolderName] = useState<string | unknown>(null);
 
-  useEffect(() => {
+  const getFiles =async () => {
     const name = location.state?.name;
     if (!name) {
       console.log("Repository name is missing.");
       return;
     }
+    try {
+      const fileResponse = await axios.post(
+        `${SERVER_URL}/repo/files`,
+        { name },
+        { withCredentials: true }
+      );
 
-    (async () => {
-      try {
-        const fileResponse = await axios.post(
-          `${SERVER_URL}/repo/files`,
-          { name },
-          { withCredentials: true }
-        );
+      setUserFolderName(fileResponse.data.folderId);
+      setFileStructure(fileResponse.data.UserRepoStructure);
+    } catch (err) {
+      console.error("Error fetching file structure:", err);
+    }
+  };
 
-        setUserFolderName(fileResponse.data.folderId);
-        setFileStructure(fileResponse.data.UserRepoStructure);
-      } catch (err) {
-        console.error("Error fetching file structure:", err);
-      }
-    })();
-  }, [location.state]);
+  useEffect(() => {
+    getFiles();
+  }, [getFiles]);
+
+  useEffect(() => {
+    socket.on("file_refresh", getFiles);
+    return () => {
+      socket.off("file_refresh", getFiles);
+    };
+  },[getFiles]);
 
   useEffect(() => {
     if (userFolderName) {
@@ -57,7 +65,7 @@ const CodeEditor = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <header className="pb-2 flex justify-between text-blue-400 px-4">
-        <Back/>
+        <Back />
         <p className="hover:underline hover:cursor-pointer font-semibold">
           Id: {repoId}
         </p>
