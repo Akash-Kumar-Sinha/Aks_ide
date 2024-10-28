@@ -1,9 +1,11 @@
-import React from 'react'
+import React from "react";
 
 const Code = () => {
   return (
-    <div>Code</div>
-  )
-}
+    <div className="overflow-auto p-2">
+      code
+    </div>
+  );
+};
 
-export default Code
+export default Code;

@@ -8,7 +8,9 @@ const Terminal = ({ name }: { name: string }) => {
 
   useEffect(() => {
     const terminal = new XTerminal({
-      rows: 15,
+      rows: 20,
+      cols: 100,
+      theme: { background: "#1A1B1E", foreground: "#E0E1DA" },
     });
     if (terminalRef.current) {
       terminal.open(terminalRef.current);
@@ -19,24 +21,21 @@ const Terminal = ({ name }: { name: string }) => {
     });
 
     const handleTerminalData = (data: string) => {
-      console.log("Received from socket:", data);
       terminal.write(data);
     };
 
-    console.log("Attaching socket listener");
     socket.on("terminal_data", handleTerminalData);
 
     return () => {
-      console.log("Cleaning up socket listener");
       socket.off("terminal_data", handleTerminalData);
       terminal.dispose();
     };
   }, []);
 
   return (
-    <div className="text-sm p-0">
-      <span className="text-green-500">{name}</span>
-      <div ref={terminalRef}></div>
+    <div className="text-sm px-2 bg-zinc-900 text-[#E0E1DA] rounded-lg shadow-md">
+      <div className="text-green-500 mb-2">{name}</div>
+      <div ref={terminalRef} className="h-48 overflow-hidden"></div>
     </div>
   );
 };
