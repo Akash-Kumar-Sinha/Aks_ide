@@ -51,6 +51,7 @@ const Repo: React.FC<RepoProps> = ({ label, description, refLink, title }) => {
       });
       if (response.status === 200) {
         const repoInfo = response.data.Repository as RepositoryInfo;
+
         navigate(`/repo/${repoInfo.id}`, { state: repoInfo });
       }
     } catch (error) {

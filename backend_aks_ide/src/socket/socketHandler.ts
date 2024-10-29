@@ -1,6 +1,7 @@
 import path from "path";
 import { Server } from "socket.io";
-import chokidar from 'chokidar';
+import chokidar from "chokidar";
+import fs from "fs/promises";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pty = require("node-pty");
 
@@ -46,9 +47,19 @@ export const setupSocket = (io: Server) => {
       }
     });
 
-    chokidar.watch(resolvedPath).on('all', (event, path) => {
-      io.emit('file_refresh', { path });
+    chokidar.watch(resolvedPath).on("all", (event, path) => {
+      io.emit("file_refresh", { path });
     });
+
+    socket.on(
+      "code_change",
+      async (data: { filePath: string; code: string }) => {
+        const { filePath, code } = data;
+
+        const configurePath = path.resolve(resolvedPath, "../", filePath);
+        await fs.writeFile(configurePath, code);
+      }
+    );
 
     socket.on("terminal_write", (data: string) => {
       if (ptyProcess) {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import Editor from "@/components/Repo/Editor";
 import Terminal from "@/components/Repo/Terminal";
@@ -16,7 +16,7 @@ const CodeEditor = () => {
   >({});
   const [userFolderName, setUserFolderName] = useState<string | unknown>(null);
 
-  const getFiles =async () => {
+  const getFiles = async () => {
     const name = location.state?.name;
     if (!name) {
       console.log("Repository name is missing.");
@@ -34,7 +34,7 @@ const CodeEditor = () => {
     } catch (err) {
       console.error("Error fetching file structure:", err);
     }
-  };
+  }
 
   useEffect(() => {
     getFiles();
@@ -45,7 +45,7 @@ const CodeEditor = () => {
     return () => {
       socket.off("file_refresh", getFiles);
     };
-  },[getFiles]);
+  }, [getFiles]);
 
   useEffect(() => {
     if (userFolderName) {
@@ -63,20 +63,19 @@ const CodeEditor = () => {
   }, [location.state.name, userFolderName]);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen w-full flex flex-col">
       <header className="pb-2 flex justify-between text-blue-400 px-4">
         <Back />
         <p className="hover:underline hover:cursor-pointer font-semibold">
           Id: {repoId}
         </p>
       </header>
-
-      <div className="h-full flex-grow flex flex-col">
-        <div className="flex flex-grow overflow-hidden">
+      <div className="h-full flex flex-col">
+        <div className="w-full flex-grow flex flex-row">
           <Editor fileStructure={fileStructure} />
         </div>
 
-        <div className="border-t border-gray-300 overflow-hidden">
+        <div className="w-full border-t border-gray-300">
           <Terminal name={location.state?.name} />
         </div>
       </div>
