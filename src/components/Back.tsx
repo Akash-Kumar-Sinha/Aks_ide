@@ -1,9 +1,14 @@
 import { Link } from "react-router-dom";
 import { IoReturnUpBackOutline } from "react-icons/io5";
-const Back = () => {
+
+interface BackProps {
+  size?: number;
+}
+
+const Back: React.FC<BackProps> = ({ size = 27 }) => {
   return (
-    <Link to="/home" className="text-blue-400">
-      <IoReturnUpBackOutline size={27} />
+    <Link to="/home" className="text-blue-400" aria-label="Go back">
+      <IoReturnUpBackOutline size={size} />
     </Link>
   );
 };

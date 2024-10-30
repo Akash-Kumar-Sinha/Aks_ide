@@ -9,6 +9,7 @@ interface Profile {
     email: string;
     createdAt: string;
     avatar: string;
+    userId: string;
   }
 
 const useUserProfile = () => {

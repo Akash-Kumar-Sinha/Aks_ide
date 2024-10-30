@@ -8,6 +8,7 @@ import { BsGoogle } from "react-icons/bs";
 
 import { Button } from "@/components/ui/button";
 import InputForm from "@/components/InputForm";
+import Loading from "@/components/Loading";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -17,6 +18,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const [status, setStatus] = useState<LOGIN_STATUS>("AUTH");
   const [message, setMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const schema = z.object({
     email: z.string().email({ message: "Invalid email" }),
@@ -33,6 +35,7 @@ const Auth = () => {
   } = useForm({ resolver: zodResolver(schema) });
 
   const onSubmit: SubmitHandler<FieldValues> = async (data) => {
+    setLoading(true);
     try {
       if (status === "PASSWORD") {
         const response = await axios.post(
@@ -46,6 +49,8 @@ const Auth = () => {
       }
     } catch (error) {
       console.error("Error during user creation:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -67,7 +72,7 @@ const Auth = () => {
           setMessage("Verification link sent to your email");
           return;
         }
-        if(response.data.Route === "AUTH") {
+        if (response.data.Route === "AUTH") {
           setMessage("Try Login through Google");
           return;
         }
@@ -95,11 +100,17 @@ const Auth = () => {
     window.location.href = `${SERVER_URL}/auth/google`;
   };
 
+  if (loading) {
+    return <Loading />;
+  }
+
   return (
     <div className="min-h-screen flex flex-col justify-center items-center">
       <div className="bg-white p-8 shadow-lg rounded-2xl w-full max-w-sm flex flex-col items-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">Login</h2>
-        {message && <p className="text-red-500 mb-4 font-medium text-xs">{message}</p>}
+        {message && (
+          <p className="text-red-500 mb-4 font-medium text-xs">{message}</p>
+        )}
         <form
           onSubmit={handleSubmit(onSubmit)}
           className="w-full flex flex-col gap-4"

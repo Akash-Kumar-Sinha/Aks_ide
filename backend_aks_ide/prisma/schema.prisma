@@ -57,7 +57,7 @@ model Profile {
 model Repository {
   id          String  @id @default(cuid())
   name        String  @unique
-  techStack   String
+  techStack   String?
   description String?
 
   createdAt DateTime @default(now())

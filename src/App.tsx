@@ -9,12 +9,12 @@ import RepoEditor from "./pages/CodeEditor";
 
 const App = () => {
   return (
-    <div className="h-full bg-zinc-950 text-zinc-100 flex flex-col">
+    <div className="h-screen flex flex-col bg-zinc-950">
       <AuthProtect>
         <Header />
       </AuthProtect>
 
-      <div className="flex-grow mt-16">
+      <div className="mt-14">
         <Routes>
           <Route path="/" element={<Auth />} />
           <Route
@@ -33,7 +33,6 @@ const App = () => {
               </AuthProtect>
             }
           />
-
           <Route
             path={`/repo/:repoId`}
             element={

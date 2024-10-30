@@ -1,21 +1,18 @@
 import { Request, Response } from "express";
-
 import { prisma } from "../../prismaDb/prismaDb";
 import fetchUserId from "../../utils/fetchUserId";
 
 const createRepo = async (req: Request, res: Response) => {
-  const { providerId } = req.user as {
-    providerId: string;
-  };
+  const { providerId } = req.user as { providerId: string };
 
   try {
     const { profileId } = (await fetchUserId(providerId, undefined)) as {
       profileId: string;
     };
 
-    const { templateName, techStack, description } = req.body;
+    const { templateName } = req.body;
 
-    if (!templateName || !techStack || !profileId) {
+    if (!templateName || !profileId) {
       res.status(400).json({ message: "Please fill all the fields" });
       return;
     }
@@ -29,19 +26,18 @@ const createRepo = async (req: Request, res: Response) => {
       return;
     }
 
-    const exisitingRepo = await prisma.repository.findUnique({
+    const existingRepo = await prisma.repository.findUnique({
       where: { name: templateName },
     });
 
-    if (exisitingRepo) {
+    if (existingRepo) {
       res.status(400).json({ message: "Repository already exists" });
       return;
     }
+
     const repo = await prisma.repository.create({
       data: {
         name: templateName,
-        techStack,
-        description,
         profile: {
           connect: { id: profileId },
         },
@@ -62,11 +58,11 @@ const createRepo = async (req: Request, res: Response) => {
         .json({ message: "Repository created successfully", Repository: repo });
       return;
     }
+
     res.status(400).json({ message: "Failed to create repository" });
-    return;
-  } catch {
+  } catch (error) {
+    console.error("Error in createRepo:", error);
     res.status(500).json({ message: "Internal server error" });
-    return;
   }
 };
 

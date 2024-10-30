@@ -1,6 +1,7 @@
 import React, { ReactNode, useState, useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import axios from "axios";
+import Loading from "@/components/Loading";
 
 interface AuthProtectProps {
   children: ReactNode;
@@ -44,7 +45,7 @@ const AuthProtect: React.FC<AuthProtectProps> = ({ children }) => {
   const allowedPaths = ["/", "/home"];
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <Loading />;
   }
 
   if (!isAuthenticated && !allowedPaths.includes(location.pathname)) {

@@ -20,7 +20,6 @@ const getFileContent = async (req: Request, res: Response) => {
     );
 
     const content = await fs.readFile(configureDirectory, "utf-8");
-    console.log("File content:", content);
     res.status(200).send({ content });
   } catch (error) {
     console.error("Error fetching files content:", error);
