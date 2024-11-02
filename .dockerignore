@@ -1,0 +1,11 @@
+node_modules
+backend_aks_ide
+npm-debug.log
+Dockerfile
+.git
+.gitignore
+.npmrc
+.env_*
+.gitlab-*
+.github
+*.md

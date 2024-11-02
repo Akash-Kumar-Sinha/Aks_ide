@@ -1,0 +1,36 @@
+version: "3.8"
+services:
+  postgres:
+    image: "postgres"
+    container_name: postgresdb
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: aks_ide
+      POSTGRES_USER: aks
+      POSTGRES_PASSWORD: aks7536
+    volumes:
+      - "postgres_data:/var/lib/postgresql/data"
+
+  backend:
+    build: 
+      context: ./backend_aks_ide
+    container_name: backend_ide
+    ports:
+      - "3000:3000"
+      - "9000:9000"
+    env_file: 
+      - .env
+    depends_on:
+      - postgres
+    command: sh -c "npx prisma db push && npm run dev"
+
+  frontend:
+    build: 
+      context: ./
+    container_name: frontend_ide
+    ports:
+      - "5173:5173"
+    
+volumes:
+  postgres_data:
