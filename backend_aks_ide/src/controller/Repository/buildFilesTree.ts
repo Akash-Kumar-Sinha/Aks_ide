@@ -1,54 +1,45 @@
 import Docker from "dockerode";
 import executeDockerCommand from "../DockerOrchestration/executeDockerCommand";
+import path from "path";
 
-const parseTreeOutput = (output: string): Record<string, unknown | null> => {
-  const lines = output
-    .trim()
-    .split('\n')
-    .map(line => line.replace(/^[^\w]*home/, 'home').trim()); // Start each line directly from "home"
-
-  const tree: Record<string, unknown | null> = {};
-
-  lines.forEach(line => {
-    const parts = line.split('/').filter(Boolean); // Split and filter out empty strings
-    let currentLevel = tree;
-
-    // Start processing each part in the line
-    parts.forEach((part, index) => {
-      if (!currentLevel[part]) {
-        // Assign an empty object for directories and null for files
-        currentLevel[part] = (index === parts.length - 1) ? null : {};
-      }
-      // Move to the next level
-      currentLevel = currentLevel[part] as Record<string, unknown>;
-    });
-  });
-
-  // Check if there is an unwanted key like '\x01A' and return only the `home` structure
-  return tree["home"] ? tree["home"] as Record<string, unknown | null> : tree;
-};
-
-// Example usage in buildFilesTree
 const buildFilesTree = async (
   container: Docker.Container,
   currentDir: string
 ): Promise<Record<string, unknown | null>> => {
-  try {
-    // Run the `find` command
-    const command = `find ${currentDir} -print`;
-    const result = (await executeDockerCommand({
+  const tree: Record<string, unknown | null> = {};
+
+  const command = `find ${currentDir} -mindepth 1 -maxdepth 1`;
+  const result = (await executeDockerCommand({ container, command })) as string;
+
+  const items = result
+    .replace(/[^\x20-\x7E\n\r]/g, "")
+    .trim()
+    .split("\n")
+    .map((item) => item.trim().replace(/^p\//, ""));
+
+  for (const item of items) {
+    const itemName = path.basename(item);
+
+    console.log("Processing item:", item, "as", itemName);
+
+    const checkDirCommand = `[ -d "${item}" ] && echo "directory" || echo "file"`;
+    const checkResult = (await executeDockerCommand({
       container,
-      command,
+      command: checkDirCommand,
     })) as string;
 
-    console.log("result", result);
-    // Parse the result into a structured tree object
-    const tree = parseTreeOutput(result);
-    return tree;
-  } catch (error) {
-    console.error("Error in buildFilesTree:", error);
-    throw error;
+    const isDirectory = checkResult.trim() === "directory";
+
+    console.log(`Is "${itemName}" a directory?`, isDirectory);
+
+    if (isDirectory) {
+      tree[itemName] = await buildFilesTree(container, item);
+    } else {
+      tree[itemName] = null;
+    }
   }
+
+  return tree;
 };
 
 export default buildFilesTree;

@@ -39,13 +39,11 @@ const openRepo = async (req: Request, res: Response) => {
     command: "pwd",
   });
 
-  console.log("result", result);
-
-  console.log("openRepo");
+  console.log("openRepo result", result);
 
   const fileTree = await buildFilesTree(container, pwd);
 
-    console.log(fileTree);
+  console.log("\nopenRepo",fileTree);
 
   res.send(fileTree);
 };
