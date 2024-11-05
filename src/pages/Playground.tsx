@@ -116,7 +116,7 @@ const Playground = () => {
 
   return (
     <div className="flex flex-col h-screen w-full bg-zinc-950 text-sm">
-      <div className="flex-grow mt-12">
+      <div className="flex-grow mt-12 w-full">
         <Editor
           projectName={projectName}
           createTemplate={createTemplate}
@@ -124,7 +124,7 @@ const Playground = () => {
           setSelectedFile={setSelectedFile}
         />
       </div>
-      <div className="h-56 border-t border-gray-600 rounded-lg">
+      <div className="h-56 border-t border-gray-600 rounded-lg w-full">
         <Terminal selectedFile={selectedFile} openRepo={openRepo} />
       </div>
     </div>

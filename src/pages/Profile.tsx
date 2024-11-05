@@ -1,6 +1,5 @@
 import { useRef, useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
 import { CiEdit } from "react-icons/ci";
 
 import {
@@ -18,7 +17,6 @@ import useUserProfile from "@/utils/useUserProfile";
 import { Input } from "@/components/ui/input";
 import Back from "@/components/Back";
 import Loading from "@/components/Loading";
-import { socket } from "@/utils/Socket";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -26,26 +24,6 @@ const Profile = () => {
   const { userProfile, loading, error } = useUserProfile();
   const [nameStatus, setNameStatus] = useState(false);
   const userName = useRef<HTMLInputElement>(null);
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    try {
-      const response = await axios.post(
-        `${SERVER_URL}/auth/logout`,
-        {},
-        { withCredentials: true }
-      );
-      if (response.status === 200) {
-        console.log("Logging out...");
-        socket.disconnect();
-        navigate("/auth");
-      } else {
-        console.log("Logout failed");
-      }
-    } catch (error) {
-      console.error("Error logging out:", error);
-    }
-  };
 
   const changeName = async () => {
     const name = userName.current?.value;
@@ -72,19 +50,19 @@ const Profile = () => {
         </div>
       ) : (
         <>
-          <div className="px-4">
+          <div className="px-4 py-4 fixed m-4 mt-11 ">
             <Back size={22} />
           </div>
-          <div className="min-h-screen flex flex-col justify-center items-center bg-zinc-950">
-            <div className="bg-white p-8 shadow-lg rounded-3xl w-full max-w-md flex flex-col items-center">
-              <h1 className="text-2xl font-bold text-gray-800 mb-6">
+          <div className="min-h-screen flex flex-col justify-center items-center">
+            <div className="bg-white p-8 shadow-lg rounded-3xl w-full max-w-lg flex flex-col items-center">
+              <h1 className="text-3xl font-bold text-gray-800 mb-6">
                 User Profile
               </h1>
               {userProfile ? (
                 <div className="w-full">
-                  <div className="flex flex-col gap-4 text-left bg-gray-100 p-4 rounded-xl">
+                  <div className="flex flex-col gap-6 text-left bg-gray-100 p-6 rounded-xl shadow-md">
                     <p className="text-gray-700 flex items-center justify-between">
-                      <span>
+                      <span className="text-lg">
                         <strong className="text-gray-900">Name:</strong>{" "}
                         {userProfile.name}
                       </span>
@@ -109,7 +87,7 @@ const Profile = () => {
                             <DialogDescription className="m-2 flex flex-col gap-4">
                               <Input
                                 ref={userName}
-                                placeholder="Enter Template Name"
+                                placeholder="Enter Your New Name"
                                 className="text-gray-800 rounded-2xl"
                               />
                             </DialogDescription>
@@ -131,25 +109,19 @@ const Profile = () => {
                         </DialogContent>
                       </Dialog>
                     </p>
-                    <p className="text-gray-700">
+                    <p className="text-gray-700 text-lg">
                       <strong className="text-gray-900">Email:</strong>{" "}
                       {userProfile.email}
                     </p>
-                    <p className="text-gray-700">
+                    <p className="text-gray-700 text-lg">
                       <strong className="text-gray-900">User ID:</strong>{" "}
                       {userProfile.id}
                     </p>
-                    <p className="text-gray-700">
+                    <p className="text-gray-700 text-lg">
                       <strong className="text-gray-900">Created At:</strong>{" "}
                       {new Date(userProfile.createdAt).toLocaleString()}
                     </p>
                   </div>
-                  <Button
-                    onClick={handleLogout}
-                    className="mt-6 w-full py-3 bg-[#593CA1] text-white font-semibold rounded-2xl hover:bg-[#442d7d] transition-all duration-300 shadow-lg"
-                  >
-                    Logout
-                  </Button>
                 </div>
               ) : (
                 <p className="text-gray-500">No user profile found</p>

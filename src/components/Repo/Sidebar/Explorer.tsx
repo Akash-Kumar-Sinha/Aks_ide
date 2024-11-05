@@ -23,7 +23,7 @@ interface ExplorerProps {
 }
 
 const Explorer: React.FC<ExplorerProps> = ({
-  fileStructure = {},  // Set a default value to avoid undefined/null
+  fileStructure = {},
   setSelectedFile,
   createTemplate,
   projectName,
@@ -35,14 +35,14 @@ const Explorer: React.FC<ExplorerProps> = ({
   };
 
   return (
-    <div className="hidden md:block lg:block w-44 bg-[#1A1A1F] border-2 border-[#1C1D2C] flex-col">
-      <span className="text-sm p-2 tracking-wide text-gray-400">Explorer</span>
-      <div>
-        {Object.keys(fileStructure || {}).length === 0 ? ( // Use fileStructure safely
+    <div className="w-56 h-full bg-[#2C2C32] border-l border-[#3D3D42] flex flex-col shadow-lg rounded-lg p-1">
+      <span className="text-sm p-3 tracking-wide text-gray-300">Explorer</span>
+      <div className="flex-grow overflow-y-auto p-2">
+        {Object.keys(fileStructure || {}).length === 0 ? (
           <Dialog>
-            <DialogTrigger className="w-full flex items-center justify-center text-[#EBEBEF] font-semibold ">
+            <DialogTrigger className="w-full flex items-center justify-center">
               <Button
-                className="bg-[#7554ad] w-full m-2 mr-3 rounded-xl hover:bg-[#5b3f8b] transition-all duration-300 shadow-md"
+                className="bg-[#7554ad] w-full rounded-xl hover:bg-[#5b3f8b] transition-all duration-300 shadow-md text-[#EBEBEF] font-semibold py-2"
                 disabled={!userProfile}
               >
                 Create Project
@@ -54,7 +54,6 @@ const Explorer: React.FC<ExplorerProps> = ({
                   Create a new project with Aks Ide
                   {!userProfile && (
                     <p className="text-[#7554ad] text-xs underline">
-                      {" "}
                       <Link to="/auth">You are not logged in</Link>
                     </p>
                   )}
@@ -72,7 +71,7 @@ const Explorer: React.FC<ExplorerProps> = ({
                 <DialogClose asChild>
                   <Button
                     type="button"
-                    className="mt-3 py-3 bg-[#7554ad] text-[#EBEBEF] font-semibold rounded-lg hover:bg-[#5b3f8b] transition-all duration-300 shadow-md"
+                    className="mt-3 py-2 bg-[#7554ad] text-[#EBEBEF] font-semibold rounded-lg hover:bg-[#5b3f8b] transition-all duration-300 shadow-md"
                     onClick={createTemplate}
                     disabled={!userProfile}
                   >
@@ -83,7 +82,7 @@ const Explorer: React.FC<ExplorerProps> = ({
             </DialogContent>
           </Dialog>
         ) : (
-          <div className="flex-grow p-2">
+          <div>
             {fileStructure && Object.keys(fileStructure).length > 0 ? (
               <FileTree tree={fileStructure} path="" onSelect={handleSelect} />
             ) : (
@@ -95,6 +94,5 @@ const Explorer: React.FC<ExplorerProps> = ({
     </div>
   );
 };
-
 
 export default Explorer;
