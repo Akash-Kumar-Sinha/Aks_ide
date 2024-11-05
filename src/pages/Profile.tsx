@@ -18,6 +18,7 @@ import useUserProfile from "@/utils/useUserProfile";
 import { Input } from "@/components/ui/input";
 import Back from "@/components/Back";
 import Loading from "@/components/Loading";
+import { socket } from "@/utils/Socket";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -36,7 +37,8 @@ const Profile = () => {
       );
       if (response.status === 200) {
         console.log("Logging out...");
-        navigate("/");
+        socket.disconnect();
+        navigate("/auth");
       } else {
         console.log("Logout failed");
       }

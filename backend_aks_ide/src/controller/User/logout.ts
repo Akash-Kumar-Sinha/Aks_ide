@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const logout = (req: Request, res: Response) => {
+  
   res.clearCookie("accessToken", {
     httpOnly: true,
     secure: true,

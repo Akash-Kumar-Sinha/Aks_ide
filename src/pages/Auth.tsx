@@ -44,7 +44,7 @@ const Auth = () => {
         );
         if (response.data.success === true) {
           document.cookie = `accessToken=${response.data.accessToken}`;
-          navigate("/home");
+          navigate("/");
         }
       }
     } catch (error) {
@@ -56,6 +56,8 @@ const Auth = () => {
 
   const sentVerificationLink = async () => {
     const formData = watch();
+    if(formData.email === "") {setMessage("Please Enter you Email!"); return;}
+    setLoading(true);
     try {
       if (status === "AUTH") {
         const response = await axios.post(
@@ -92,6 +94,8 @@ const Auth = () => {
       }
     } catch (error) {
       console.error("Error sending verification link:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -100,17 +104,19 @@ const Auth = () => {
     window.location.href = `${SERVER_URL}/auth/google`;
   };
 
-  if (loading) {
-    return <Loading />;
-  }
-
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center">
-      <div className="bg-white p-8 shadow-lg rounded-2xl w-full max-w-sm flex flex-col items-center">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Login</h2>
+    <div className="absolute top-0 h-full flex justify-center items-center w-full">
+      <div className="bg-[#EBEBEF] p-8 shadow-xl rounded-2xl w-full max-w-sm flex flex-col items-center space-y-6">
+        {loading && <Loading size={22} />}
+
+        <h2 className="text-2xl font-bold text-[#1C1D2C]">Login</h2>
+
         {message && (
-          <p className="text-red-500 mb-4 font-medium text-xs">{message}</p>
+          <p className="text-red-500 font-medium text-xs text-center">
+            {message}
+          </p>
         )}
+
         <form
           onSubmit={handleSubmit(onSubmit)}
           className="w-full flex flex-col gap-4"
@@ -123,7 +129,7 @@ const Auth = () => {
               register={register}
               required={true}
               errors={errors}
-              disabled={status === ("SENT" as LOGIN_STATUS)}
+              disabled={status === "SENT"}
             />
           )}
 
@@ -139,7 +145,7 @@ const Auth = () => {
               />
               <Button
                 type="submit"
-                className="w-full py-3 bg-indigo-500 text-white font-semibold rounded-lg hover:bg-indigo-600 transition-all duration-300"
+                className="w-full py-3 bg-indigo-500 text-[#EBEBEF] font-semibold rounded-lg hover:bg-indigo-600 transition-all duration-300 shadow-md"
               >
                 Login
               </Button>
@@ -150,7 +156,7 @@ const Auth = () => {
             <Button
               type="button"
               onClick={sentVerificationLink}
-              className="w-full py-3 bg-indigo-500 text-white font-semibold rounded-lg hover:bg-indigo-600 transition-all duration-300"
+              className="w-full py-3 bg-[#7554ad] text-[#EBEBEF] font-semibold rounded-lg hover:bg-[#5b3f8b] transition-all duration-300 shadow-md"
             >
               {status === "SENT" ? "Next" : "Send Verification Link"}
             </Button>
@@ -159,7 +165,7 @@ const Auth = () => {
 
         {status === "AUTH" && (
           <Button
-            className="mt-4 flex items-center justify-center w-full py-3 bg-white text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-100 transition-all duration-300"
+            className="mt-4 flex items-center justify-center w-full py-3 bg-[#1C1D2C] text-[#EBEBEF] border-2 border-[#1C1D2C] rounded-lg hover:bg-[#EBEBEF] hover:text-[#1C1D2C] transition-all duration-300 shadow-md"
             onClick={handleLogin}
           >
             <BsGoogle className="mr-2 text-2xl" />

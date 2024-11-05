@@ -1,30 +1,19 @@
 import { Route, Routes } from "react-router-dom";
 
 import Auth from "./pages/Auth";
-import Home from "./pages/Home";
 import AuthProtect from "./utils/AuthProtect";
 import Profile from "./pages/Profile";
 import Header from "./components/Header";
-import RepoEditor from "./pages/CodeEditor";
+import Playground from "./pages/Playground";
 
 const App = () => {
   return (
-    <div className="h-screen flex flex-col bg-zinc-950">
-      <AuthProtect>
-        <Header />
-      </AuthProtect>
+    <div className="relative h-screen flex flex-col bg-zinc-950 text-[#EBEBEF]">
+      <Header />
 
-      <div className="mt-14">
+      <div>
         <Routes>
-          <Route path="/" element={<Auth />} />
-          <Route
-            path="/home"
-            element={
-              <AuthProtect>
-                <Home />
-              </AuthProtect>
-            }
-          />
+          <Route path="/auth" element={<Auth />} />
           <Route
             path="/profile"
             element={
@@ -33,14 +22,7 @@ const App = () => {
               </AuthProtect>
             }
           />
-          <Route
-            path={`/repo/:repoId`}
-            element={
-              <AuthProtect>
-                <RepoEditor />
-              </AuthProtect>
-            }
-          />
+          <Route path="/" element={<Playground />} />
         </Routes>
       </div>
     </div>

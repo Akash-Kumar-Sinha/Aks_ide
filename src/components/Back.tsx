@@ -7,7 +7,7 @@ interface BackProps {
 
 const Back: React.FC<BackProps> = ({ size = 27 }) => {
   return (
-    <Link to="/home" className="text-blue-400" aria-label="Go back">
+    <Link to="/" className="text-blue-400" aria-label="Go back">
       <IoReturnUpBackOutline size={size} />
     </Link>
   );

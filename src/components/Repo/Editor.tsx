@@ -1,19 +1,44 @@
 import React from "react";
 
-import FilesSidebar from "./Sidebar/FilesSidebar";
-import Code from "./Code";
-import Loading from "../Loading";
+// import FilesSidebar from "./Sidebar/FilesSidebar";
+import CodeEditor from "./CodeEditor";
+// import Loading from "../Loading";
+import SideBar from "./Sidebar/SideBar";
+import Explorer from "./Sidebar/Explorer";
 
 interface EditorProps {
-  fileStructure: Record<string, Record<string, unknown> | null>;
-  directoryLoading: boolean;
+  fileStructure: Record<string, unknown | null>;
+  setSelectedFile: (path: string) => void;
+  createTemplate: () => void;
+  projectName: React.RefObject<HTMLInputElement>;
 }
 
-const Editor: React.FC<EditorProps> = ({ fileStructure, directoryLoading }) => {
-  const [selectedFile, setSelectedFile] = React.useState<string>("");
-
+const Editor: React.FC<EditorProps> = ({
+  fileStructure,
+  setSelectedFile,
+  createTemplate,
+  projectName,
+}) => {
   return (
-    <div className="flex h-full bg-zinc-900 rounded-2xl shadow-lg w-full overflow-hidden">
+    <div className="relative h-full flex">
+      <div className=" flex">
+        <SideBar />
+        <Explorer
+          projectName={projectName}
+          createTemplate={createTemplate}
+          fileStructure={fileStructure}
+          setSelectedFile={setSelectedFile}
+        />
+      </div>
+      <CodeEditor />
+    </div>
+  );
+};
+
+export default Editor;
+
+{ /* 
+  <div className="flex h-full bg-zinc-900 rounded-2xl shadow-lg w-full overflow-hidden">
       <div className="w-64 bg-zinc-800 border-r rounded-2xl border-gray-700 overflow-y-auto h-full">
         {directoryLoading ? (
           <div className="h-full flex flex-col justify-center items-center">
@@ -33,8 +58,5 @@ const Editor: React.FC<EditorProps> = ({ fileStructure, directoryLoading }) => {
           <Code selectedFile={selectedFile} />
         </div>
       </div>
-    </div>
-  );
-};
-
-export default Editor;
+    </div> */
+}

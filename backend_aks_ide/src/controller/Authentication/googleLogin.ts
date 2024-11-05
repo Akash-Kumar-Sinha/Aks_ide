@@ -40,7 +40,7 @@ const googleLogin = async(req: Request, res: Response) => {
     httpOnly: true,
     secure: true,
   });
-  res.redirect(`${VITE_CLIENT_URL}/home`);
+  res.redirect(`${VITE_CLIENT_URL}`);
 };
 
 export default googleLogin;

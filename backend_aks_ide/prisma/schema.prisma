@@ -43,6 +43,7 @@ model Profile {
   name   String?
   avatar String?
   repoCount Int? @default(0)
+  dockerContainerId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

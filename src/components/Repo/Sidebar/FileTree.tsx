@@ -2,15 +2,15 @@ import React from "react";
 import { FaFile, FaFolder } from "react-icons/fa";
 
 interface FileTreeProps {
-  tree: Record<string, unknown | null>;
+  tree: Record<string, unknown | null> | null | undefined; 
   path?: string;
   onSelect?: (path: string) => void;
 }
 
 const FileTree: React.FC<FileTreeProps> = ({ tree, path = "", onSelect }) => {
   return (
-    <div className="w-96">
-      {Object.entries(tree).map(([name, value]) => {
+    <div className="w-full">
+      {tree && Object.entries(tree).map(([name, value]) => {
         const currentPath = path ? `${path}/${name}` : name;
 
         if (value !== null && typeof value === "object") {
@@ -18,7 +18,7 @@ const FileTree: React.FC<FileTreeProps> = ({ tree, path = "", onSelect }) => {
             <div key={name}>
               <div className="flex items-center">
                 <FaFolder className="mr-2 text-yellow-300" />
-                <div className="text-zinc-50 font-normal cursor-default">
+                <div className="text-zinc-50 font-normal cursor-pointer">
                   {name}
                 </div>
               </div>

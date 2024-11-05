@@ -42,14 +42,12 @@ const AuthProtect: React.FC<AuthProtectProps> = ({ children }) => {
     verifyToken();
   }, [navigate]);
 
-  const allowedPaths = ["/", "/home"];
-
   if (isLoading) {
     return <Loading />;
   }
 
-  if (!isAuthenticated && !allowedPaths.includes(location.pathname)) {
-    return <Navigate to="/" replace />;
+  if (!isAuthenticated) {
+    return <Navigate to="/repo" replace />;
   }
 
   return <>{children}</>;

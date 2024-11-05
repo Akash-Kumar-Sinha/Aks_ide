@@ -10,9 +10,9 @@ const createRepo = async (req: Request, res: Response) => {
       profileId: string;
     };
 
-    const { templateName } = req.body;
+    const { projectName } = req.body;
 
-    if (!templateName || !profileId) {
+    if (!projectName || !profileId) {
       res.status(400).json({ message: "Please fill all the fields" });
       return;
     }
@@ -27,7 +27,7 @@ const createRepo = async (req: Request, res: Response) => {
     }
 
     const existingRepo = await prisma.repository.findUnique({
-      where: { name: templateName },
+      where: { name: projectName },
     });
 
     if (existingRepo) {
@@ -37,7 +37,7 @@ const createRepo = async (req: Request, res: Response) => {
 
     const repo = await prisma.repository.create({
       data: {
-        name: templateName,
+        name: projectName,
         profile: {
           connect: { id: profileId },
         },
@@ -53,11 +53,13 @@ const createRepo = async (req: Request, res: Response) => {
           },
         },
       });
+
       res
         .status(200)
         .json({ message: "Repository created successfully", Repository: repo });
       return;
     }
+    console.log("Failed to create repository");
 
     res.status(400).json({ message: "Failed to create repository" });
   } catch (error) {
