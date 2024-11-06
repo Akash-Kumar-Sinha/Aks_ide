@@ -37,7 +37,7 @@ const Playground = () => {
       );
 
       if (response.status === 200) {
-        await getFiles(name); // Pass the project name directly to getFiles
+        await getFiles(name);
       }
     } catch (error) {
       console.error("Error creating template:", error);
@@ -115,7 +115,7 @@ const Playground = () => {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen w-full bg-zinc-950 text-sm">
+    <div className="flex flex-col h-screen w-full text-sm">
       <div className="flex-grow mt-12 w-full">
         <Editor
           projectName={projectName}

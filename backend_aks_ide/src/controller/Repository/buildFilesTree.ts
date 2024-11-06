@@ -8,7 +8,7 @@ const buildFilesTree = async (
 ): Promise<Record<string, unknown | null>> => {
   const tree: Record<string, unknown | null> = {};
 
-  const command = `find ${currentDir} -mindepth 1 -maxdepth 1`;
+  const command = `find ${currentDir}`;
   const result = (await executeDockerCommand({ container, command })) as string;
 
   const items = result
