@@ -5,6 +5,7 @@ import executeDockerCommand from "../DockerOrchestration/executeDockerCommand";
 import buildFilesTree from "./buildFilesTree";
 
 const docker = new Docker();
+
 const generateFolder = async (
   directory: string,
   profileId: string,
@@ -22,14 +23,18 @@ const generateFolder = async (
     const container = docker.getContainer(containerId);
 
     const formattedRepoName = repoName.replace(/ /g, "_");
-    
+
     const userFolderPath = path.join("/home", profileId);
     const newUserFolderPath = path.join(userFolderPath, formattedRepoName);
-    
-    const command = `mkdir -p ${newUserFolderPath}`;
-    await executeDockerCommand({ container, command });
-    
-    const fileTree = await buildFilesTree(container, newUserFolderPath);
+
+    const createDirCommand = `mkdir -p ${newUserFolderPath}`;
+    await executeDockerCommand({
+      container,
+      command: createDirCommand,
+    });
+
+    const fileTree = await buildFilesTree(container, userFolderPath);
+
     return fileTree;
   } catch (error) {
     console.error("Error in generateFolder:", error);

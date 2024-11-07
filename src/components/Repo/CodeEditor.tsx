@@ -9,10 +9,10 @@ import Loading from "../Loading";
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
 interface CodeProps {
-  selectedFile?: string;
+  selectedFileAbsolutePath: string;
 }
 
-const CodeEditor: React.FC<CodeProps> = ({ selectedFile }) => {
+const CodeEditor: React.FC<CodeProps> = ({ selectedFileAbsolutePath }) => {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const [codeContent, setCodeContent] = useState<string>("");
   const [fetchCodeContent, setFetchCodeContent] = useState<string>("");
@@ -31,22 +31,23 @@ const CodeEditor: React.FC<CodeProps> = ({ selectedFile }) => {
     if (value) {
       setCodeContent(value);
       if (!isSaved) {
-        socket.emit("code_change", { filePath: selectedFile, code: value });
+        socket.emit("write_code", { filePath: selectedFileAbsolutePath, code: value });
       }
     }
   };
 
   const getFileContent = useCallback(async () => {
-    if (!selectedFile) return;
+    if (!selectedFileAbsolutePath) return;
 
     setContentLoading(true);
+    console.log("Fetching file content...");
 
     try {
       const response = await axios.get(`${SERVER_URL}/repo/content`, {
-        params: { filePath: selectedFile },
+        params: { filePath: selectedFileAbsolutePath },
         withCredentials: true,
       });
-
+      console.log("response", response.data.content);
       if (response.status === 200) {
         setFetchCodeContent(response.data.content);
         setCodeContent(response.data.content);
@@ -56,11 +57,11 @@ const CodeEditor: React.FC<CodeProps> = ({ selectedFile }) => {
     } finally {
       setContentLoading(false);
     }
-  }, [selectedFile]);
+  }, [selectedFileAbsolutePath]);
 
   useEffect(() => {
     getFileContent();
-  }, [selectedFile, getFileContent]);
+  }, [selectedFileAbsolutePath, getFileContent]);
 
   useEffect(() => {
     if (fetchCodeContent) {
@@ -69,8 +70,8 @@ const CodeEditor: React.FC<CodeProps> = ({ selectedFile }) => {
   }, [fetchCodeContent]);
 
   useEffect(() => {
-    if (selectedFile) {
-      const fileExtension = selectedFile.split(".").pop() || "";
+    if (selectedFileAbsolutePath) {
+      const fileExtension = selectedFileAbsolutePath.split(".").pop() || "";
       const languageMap: Record<string, string> = {
         js: "javascript",
         ts: "typescript",
@@ -83,7 +84,7 @@ const CodeEditor: React.FC<CodeProps> = ({ selectedFile }) => {
       };
       setLanguage(languageMap[fileExtension] || "plaintext");
     }
-  }, [selectedFile]);
+  }, [selectedFileAbsolutePath]);
   
 
   return (

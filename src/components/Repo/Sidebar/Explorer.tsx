@@ -14,25 +14,24 @@ import {
 import { Input } from "@/components/ui/input";
 import useUserProfile from "@/utils/useUserProfile";
 import { Link } from "react-router-dom";
+import Loading from "@/components/Loading";
 
 interface ExplorerProps {
   fileStructure: Record<string, unknown | null>;
-  setSelectedFile: (path: string) => void;
   createTemplate: () => void;
   projectName: React.RefObject<HTMLInputElement>;
+  explorerloadingStatus: boolean;
+  handleSelect: (pat: string) => void;
 }
 
 const Explorer: React.FC<ExplorerProps> = ({
   fileStructure = {},
-  setSelectedFile,
+  handleSelect,
   createTemplate,
   projectName,
+  explorerloadingStatus,
 }) => {
   const { userProfile } = useUserProfile();
-  const handleSelect = (path: string) => {
-    setSelectedFile(path);
-    console.log("Selected file path:", path);
-  };
 
   return (
     <div className="w-56 h-full bg-[#2C2C32] border-l border-[#3D3D42] flex flex-col shadow-lg rounded-lg p-1">
@@ -82,13 +81,25 @@ const Explorer: React.FC<ExplorerProps> = ({
             </DialogContent>
           </Dialog>
         ) : (
-          <div>
-            {fileStructure && Object.keys(fileStructure).length > 0 ? (
-              <FileTree tree={fileStructure} path="" onSelect={handleSelect} />
+          <>
+            {explorerloadingStatus ? (
+              <Loading />
             ) : (
-              <div className="text-gray-500 text-center">No files found</div>
+              <div>
+                {fileStructure && Object.keys(fileStructure).length > 0 ? (
+                  <FileTree
+                    tree={fileStructure}
+                    path=""
+                    onSelect={handleSelect}
+                  />
+                ) : (
+                  <div className="text-gray-500 text-center">
+                    No files found
+                  </div>
+                )}
+              </div>
             )}
-          </div>
+          </>
         )}
       </div>
     </div>

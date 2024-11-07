@@ -23,7 +23,7 @@ const Header = () => {
   }, [userProfile, navigate]);
 
   return (
-    <header className="fixed top-0 left-0 w-full px-6 h-12 bg-[#1C1D2C] border-b-2 border-[#111116] shadow-lg rounded-b-2xl flex justify-between items-center z-10">
+    <header className="fixed top-0 left-0 w-full px-6 h-12 bg-[#1C1D2C] border-b-2 border-[#111116] shadow-lg rounded-b-2xl flex justify-between items-center z-20">
       <h1 className="text-2xl font-bold text-[#7554ad]">Aks Ide</h1>
 
       {loading && <Loading size={22} />}

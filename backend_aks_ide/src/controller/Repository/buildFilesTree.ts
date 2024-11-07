@@ -8,34 +8,27 @@ const buildFilesTree = async (
 ): Promise<Record<string, unknown | null>> => {
   const tree: Record<string, unknown | null> = {};
 
-  const command = `find ${currentDir}`;
+  const command = `ls -lA ${currentDir}`;
   const result = (await executeDockerCommand({ container, command })) as string;
 
   const items = result
     .replace(/[^\x20-\x7E\n\r]/g, "")
     .trim()
     .split("\n")
-    .map((item) => item.trim().replace(/^p\//, ""));
+    .map((line) => line.trim());
 
-  for (const item of items) {
-    const itemName = path.basename(item);
+  for (const line of items) {
+    const parts = line.split(/\s+/);
+    const fileType = parts[0];
+    const itemName = parts[parts.length - 1];
 
-    console.log("Processing item:", item, "as", itemName);
-
-    const checkDirCommand = `[ -d "${item}" ] && echo "directory" || echo "file"`;
-    const checkResult = (await executeDockerCommand({
-      container,
-      command: checkDirCommand,
-    })) as string;
-
-    const isDirectory = checkResult.trim() === "directory";
-
-    console.log(`Is "${itemName}" a directory?`, isDirectory);
-
-    if (isDirectory) {
-      tree[itemName] = await buildFilesTree(container, item);
-    } else {
-      tree[itemName] = null;
+    if (itemName) {
+      if (fileType.startsWith("d")) {
+        const itemPath = path.join(currentDir, itemName);
+        tree[itemName] = await buildFilesTree(container, itemPath);
+      } else if (fileType.startsWith("-")) {
+        tree[itemName] = null;
+      }
     }
   }
 

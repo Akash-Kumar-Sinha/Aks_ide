@@ -13,14 +13,14 @@ const Playground = () => {
   const [fileStructure, setFileStructure] = useState<
     Record<string, unknown | null>
   >({});
-  const [loadingStatus, setLoadingStatus] = useState(false);
+  const [explorerloadingStatus, setExplorerLoadingStatus] = useState(false);
   const [selectedFile, setSelectedFile] = useState("");
+  const [selectedFileAbsolutePath, setSelectedFileAbsolutePath] = useState("");
   const [pwd, setPwd] = useState<string>("");
   const projectName = useRef<HTMLInputElement>(null);
 
   const createTemplate = async () => {
     if (!userProfile) return;
-    setLoadingStatus(true);
     try {
       if (!projectName.current) return;
 
@@ -41,8 +41,6 @@ const Playground = () => {
       }
     } catch (error) {
       console.error("Error creating template:", error);
-    } finally {
-      setLoadingStatus(false);
     }
   };
 
@@ -53,7 +51,6 @@ const Playground = () => {
     }
 
     try {
-      setLoadingStatus(true);
       const response = await axios.post(
         `${SERVER_URL}/repo/files`,
         { name },
@@ -61,16 +58,18 @@ const Playground = () => {
       );
 
       if (response.status === 200) {
-        setFileStructure(response.data.fileStructure);
+        openRepo();
       }
     } catch (err) {
       console.error("Error fetching file structure:", err);
-    } finally {
-      setLoadingStatus(false);
     }
   };
 
-  useEffect(() => {
+  const openRepo = async () => {
+    setSelectedFile("");
+    setSelectedFileAbsolutePath("");
+    socket.emit("get_pwd");
+
     const handlePwd = (data: string) => {
       const match = data.match(/(\/[^\s]+)/);
       if (match) {
@@ -81,25 +80,31 @@ const Playground = () => {
       }
     };
 
-    socket.on("receive_pwd", handlePwd);
-    return () => {
-      socket.off("receive_pwd", handlePwd);
-    };
-  }, []);
-
-  const openRepo = async () => {
-    socket.emit("get_pwd");
+    socket.once("receive_pwd", handlePwd);
     socket.emit("clear_terminal");
+    fetchRepoData();
+  };
+
+  const fetchRepoData = async () => {
     if (pwd) {
-      console.log("Current Directory:", pwd);
-      const response = await axios.get(`${SERVER_URL}/repo/open_repo`, {
-        params: { pwd },
-        withCredentials: true,
-      });
-      if (response.status === 200) {
-        console.log(response.data.fileStructure);
+      setExplorerLoadingStatus(true);
+
+      try {
+        console.log("Current Directory:", pwd);
+        const response = await axios.get(`${SERVER_URL}/repo/open_repo`, {
+          params: { pwd },
+          withCredentials: true,
+        });
+
+        if (response.status === 200) {
+          setFileStructure(response.data.fileStructure);
+        }
+        console.log("openRepo", response.data);
+      } catch (error) {
+        console.log("Error opening repository:", error);
+      } finally {
+        setExplorerLoadingStatus(false);
       }
-      console.log("openRepo", response.data);
     }
   };
 
@@ -114,14 +119,36 @@ const Playground = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (selectedFile) {
+      socket.emit("get_pwd");
+
+      const handlePwd = (data: string) => {
+        const match = data.match(/(\/[^\s]+)/);
+        if (match) {
+          const currentDir = match[1];
+          if (!currentDir.includes(":")) {
+            setPwd(currentDir);
+          }
+        }
+      };
+
+      socket.once("receive_pwd", handlePwd);
+      socket.emit("clear_terminal");
+      setSelectedFileAbsolutePath(`${pwd}${selectedFile}`);
+    }
+  }, [pwd, selectedFile]);
+
   return (
     <div className="flex flex-col h-screen w-full text-sm">
-      <div className="flex-grow mt-12 w-full">
+      <div className="flex-grow mt-12 w-full overflow-hidden">
         <Editor
           projectName={projectName}
           createTemplate={createTemplate}
           fileStructure={fileStructure}
           setSelectedFile={setSelectedFile}
+          explorerloadingStatus={explorerloadingStatus}
+          selectedFileAbsolutePath={selectedFileAbsolutePath}
         />
       </div>
       <div className="h-56 border-t border-gray-600 rounded-lg w-full">

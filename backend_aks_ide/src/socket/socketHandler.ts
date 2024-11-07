@@ -1,8 +1,9 @@
 import { Server } from "socket.io";
 import { prisma } from "../prismaDb/prismaDb";
 import Docker from "dockerode";
-import startContainer from "./startContainer";
-import chokidar from "chokidar";
+import startContainer from "../controller/DockerOrchestration/startContainer";
+import executeDockerCommand from "../controller/DockerOrchestration/executeDockerCommand";
+// import chokidar from "chokidar";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pty = require("node-pty");
 
@@ -81,12 +82,58 @@ export const setupSocket = (io: Server) => {
         terminalRendered = false;
         return;
       }
+
+      const container = docker.getContainer(containerId);
+
+      const result = await container.exec({
+        Cmd: ["bash", "-c", "file --version"],
+        AttachStdout: true,
+        AttachStderr: true,
+      });
+
+      const resultStream = await result.start({ hijack: true, stdin: true });
+
+      resultStream.on("data", async (data) => {
+        const fileVersion = data.toString().split("-").pop();
+        console.log(fileVersion);
+        if (fileVersion && parseInt(fileVersion, 10) >= 5) {
+          console.log("File utility is already installed.");
+          return;
+        } else {
+          const exec = await container.exec({
+            Cmd: ["bash", "-c", "apt-get update && apt-get install -y file"],
+            AttachStdout: true,
+            AttachStderr: true,
+          });
+
+          const stream = await exec.start({ hijack: true, stdin: true });
+
+          stream.on("data", (data) => {
+            socket.emit("terminal_data", data.toString());
+            console.log(data.toString());
+          });
+
+          stream.on("end", () => {
+            ptyProcess.write("\rclear\r");
+            socket.emit(
+              "terminal_data",
+              "File utility installed successfully."
+            );
+          });
+        }
+      });
+
+      resultStream.on("end", () => {
+        console.log("File utility installed successfully.");
+      });
+
       terminalRendered = true;
       console.log("PTY process successfully spawned.");
+
       let currentDir = "";
+
       ptyProcess.onData((data: string) => {
         socket.emit("terminal_data", data);
-        // console.log(data);
         if (data.includes("root@")) {
           currentDir = data.trim();
           currentDir = currentDir.replace("root@", "");
@@ -104,15 +151,6 @@ export const setupSocket = (io: Server) => {
         }
       });
 
-      // socket.on("create_folder", (data) => {
-      //   console.log("Creating folder:", data);
-      //   const {folderName} = data;
-      //   ptyProcess.write(`\rclear\r`);
-      //   ptyProcess.write(`mkdir ${folderName}\r`);
-      //   ptyProcess.write(`cd ${folderName}\r`);
-      //   ptyProcess.write(`\rclear\r`);
-      // });
-
       socket.on("clear_terminal", async () => {
         if (ptyProcess) {
           ptyProcess.write("\rclear\r");
@@ -125,15 +163,40 @@ export const setupSocket = (io: Server) => {
         }
       });
 
+      socket.on(
+        "write_code",
+        async (data: { code: string; filePath: string }) => {
+          if (!containerId) {
+            socket.emit("error", "Unable to save file.");
+            return;
+          }
+
+          const { code, filePath } = data;
+
+          console.log(`Writing code to ${filePath}`, code);
+
+          // Escape the code string to handle special characters and newlines
+          const command = `printf "%s" "${code}" > ${filePath}`;
+
+          try {
+            const result = await executeDockerCommand({ container, command });
+            console.log(result);
+          } catch (error) {
+            console.error("Error writing code to file:", error);
+            socket.emit("error", "Failed to write code to file.");
+          }
+        }
+      );
+
       socket.on("disconnect", async () => {
         console.log("A user disconnected");
-        if (ptyProcess) {
-          ptyProcess.kill();
-        }
         if (containerId) {
           const container = docker.getContainer(containerId);
           await container.stop();
           console.log(`Container ${containerId} stopped.`);
+        }
+        if (ptyProcess) {
+          ptyProcess.kill();
         }
       });
     });

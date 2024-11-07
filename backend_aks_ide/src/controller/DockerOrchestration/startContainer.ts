@@ -1,5 +1,5 @@
-import { prisma } from "../prismaDb/prismaDb";
-import createDockerContainer from "../controller/DockerOrchestration/createDockerContainer";
+import { prisma } from "../../prismaDb/prismaDb";
+import createDockerContainer from "./createDockerContainer";
 
 const startContainer = async (profileId: string) => {
   const containerId = await createDockerContainer();

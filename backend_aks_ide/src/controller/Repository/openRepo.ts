@@ -8,12 +8,8 @@ import buildFilesTree from "./buildFilesTree";
 const docker = new Docker();
 
 const openRepo = async (req: Request, res: Response) => {
-  console.log("openRepo");
   const { providerId } = req.user as { providerId: string };
-
   const pwd = req.query.pwd as string;
-
-  console.log("pwd", pwd);
 
   const { profileId } = (await fetchUserId(providerId, undefined)) as {
     userId: string;
@@ -32,20 +28,17 @@ const openRepo = async (req: Request, res: Response) => {
   }
 
   const containerId = profile.dockerContainerId as string;
-
   const container = docker.getContainer(containerId);
-  const result = await executeDockerCommand({
+  await executeDockerCommand({
     container,
     command: "pwd",
   });
 
-  console.log("openRepo result", result);
-
   const fileTree = await buildFilesTree(container, pwd);
 
-  console.log("\nopenRepo",fileTree);
+  console.log("fileTree", fileTree);
 
-  res.send(fileTree);
+  res.status(200).send({ fileStructure: fileTree });
 };
 
 export default openRepo;

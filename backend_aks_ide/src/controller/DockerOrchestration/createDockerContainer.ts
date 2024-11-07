@@ -1,4 +1,5 @@
 import Docker from "dockerode";
+// import executeDockerCommand from "./executeDockerCommand";
 
 const docker = new Docker();
 
@@ -46,7 +47,7 @@ const createDockerContainer = async () => {
     });
 
     await container.start();
-    console.log(`Container created with ID: ${container.id}`);
+    
     return container.id;
   } catch (error) {
     console.error("Error creating Docker container:", error);

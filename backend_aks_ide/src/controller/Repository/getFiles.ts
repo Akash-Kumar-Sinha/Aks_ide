@@ -37,11 +37,13 @@ const getFiles = async (req: Request, res: Response): Promise<void> => {
     }
     const currentWorkingDirectory = `/home/${profileId}`;
 
-    const fileStructure = await generateFolder(currentWorkingDirectory, profileId, repoName);
+    const fileStructure = await generateFolder(
+      currentWorkingDirectory,
+      profileId,
+      repoName
+    );
 
-    console.log("File Structure:", JSON.stringify(fileStructure, null, 2));
-
-    res.status(200).send({ fileStructure });
+    res.status(200).send({ fileStructure: fileStructure });
   } catch (error) {
     console.error("Error fetching files:", error);
     res.status(500).send({ message: "Internal Server Error" });

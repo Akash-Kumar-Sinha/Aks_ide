@@ -69,13 +69,22 @@ const Terminal: React.FC<TerminalProps> = ({ selectedFile, openRepo }) => {
           </span>
         </div>
         {userProfile && (
-          <Button
-            variant="default"
-            onClick={openRepo}
-            className="bg-[#7554ad] text-[#EBEBEF] hover:bg-[#5b3f8b] transition-all duration-300 shadow-md text-xs px-4 h-fit m-1 py-1 rounded-lg"
-          >
-            Open
-          </Button>
+          <>
+            <div className="text-gray-500 text-xs flex gap-2">
+              <span className="text-gray-400 font-bold">hint:</span>
+              <span>
+                In the terminal, navigate to the desired directory, then click
+                "Open" to view it in the file explorer.
+              </span>
+            </div>
+            <Button
+              variant="default"
+              onClick={openRepo}
+              className="bg-[#7554ad] text-[#EBEBEF] hover:bg-[#5b3f8b] transition-all duration-300 shadow-md text-xs px-4 h-fit m-1 py-1 rounded-lg"
+            >
+              Open
+            </Button>
+          </>
         )}
       </div>
       <div className="flex-grow border border-gray-600 rounded-lg px-2 py-1 overflow-hidden">

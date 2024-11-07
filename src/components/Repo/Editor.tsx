@@ -8,6 +8,8 @@ interface EditorProps {
   setSelectedFile: (path: string) => void;
   createTemplate: () => void;
   projectName: React.RefObject<HTMLInputElement>;
+  explorerloadingStatus: boolean;
+  selectedFileAbsolutePath: string;
 }
 
 const Editor: React.FC<EditorProps> = ({
@@ -15,6 +17,8 @@ const Editor: React.FC<EditorProps> = ({
   setSelectedFile,
   createTemplate,
   projectName,
+  explorerloadingStatus,
+  selectedFileAbsolutePath,
 }) => {
   const [isExplorerVisible, setExplorerVisible] = useState(true);
   const [isAnimating, setAnimating] = useState(false);
@@ -25,6 +29,11 @@ const Editor: React.FC<EditorProps> = ({
     setTimeout(() => {
       setAnimating(false);
     }, 300);
+  };
+
+  const handleSelect = (path: string) => {
+    setSelectedFile(path);
+    console.log(selectedFileAbsolutePath);
   };
 
   return (
@@ -49,12 +58,15 @@ const Editor: React.FC<EditorProps> = ({
               projectName={projectName}
               createTemplate={createTemplate}
               fileStructure={fileStructure}
-              setSelectedFile={setSelectedFile}
+              explorerloadingStatus={explorerloadingStatus}
+              handleSelect={handleSelect}
             />
           )}
         </div>
       </div>
-      <CodeEditor />
+      <CodeEditor 
+      selectedFileAbsolutePath={selectedFileAbsolutePath}
+      />
     </div>
   );
 };

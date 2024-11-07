@@ -27,10 +27,10 @@ const executeDockerCommand = async ({
       let output = "";
 
       stream.on("data", (data) => {
-        output += data.toString(); // Capture output as string
+        output += data.toString();
       });
 
-      stream.on("end", () => resolve(output.trim())); // Resolve with the complete output
+      stream.on("end", () => resolve(output.trim()));
       stream.on("error", (err) => reject(err));
     });
   });
