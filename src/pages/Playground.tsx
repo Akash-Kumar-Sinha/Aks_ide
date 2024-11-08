@@ -58,7 +58,7 @@ const Playground = () => {
       );
 
       if (response.status === 200) {
-        openRepo();
+        setFileStructure(response.data.fileStructure);
       }
     } catch (err) {
       console.error("Error fetching file structure:", err);

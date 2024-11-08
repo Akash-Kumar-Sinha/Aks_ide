@@ -25,7 +25,7 @@ const FileTree: React.FC<FileTreeProps> = ({ tree, path = "", onSelect }) => {
                     {name}
                   </div>
                 </div>
-                <div className="ml-4">
+                <div className="ml-4 text-xs">
                   <FileTree
                     tree={value as Record<string, unknown | null>}
                     path={currentPath}
