@@ -9,7 +9,7 @@ interface FileTreeProps {
 
 const FileTree: React.FC<FileTreeProps> = ({ tree, path = "", onSelect }) => {
   return (
-    <div className="w-full">
+    <div className="w-full border-l border-gray-500">
       {tree &&
         Object.entries(tree).map(([name, value]) => {
           const currentPath = path ? `${path}/${name}` : `/${name}`;

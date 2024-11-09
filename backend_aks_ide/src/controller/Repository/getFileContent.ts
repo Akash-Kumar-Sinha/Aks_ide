@@ -47,7 +47,6 @@ const getFileContent = async (req: Request, res: Response) => {
 
     console.log("Fetched content from Docker:", content);
 
-    res.setHeader("Content-Type", "text/plain");
     res.status(200).send({ content: content });
   } catch (error) {
     console.error("Error fetching files content:", error);

@@ -36,7 +36,7 @@ const Explorer: React.FC<ExplorerProps> = ({
   return (
     <div className="w-56 h-full bg-[#2C2C32] border-l border-[#3D3D42] flex flex-col shadow-lg rounded-lg p-1">
       <span className="text-sm p-3 tracking-wide text-gray-300">Explorer</span>
-      <div className="flex-grow overflow-y-auto p-2">
+      <div className="flex-grow overflow-y-auto p-2 mb-4">
         {Object.keys(fileStructure || {}).length === 0 ? (
           <Dialog>
             <DialogTrigger className="w-full flex items-center justify-center">

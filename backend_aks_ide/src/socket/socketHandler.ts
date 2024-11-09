@@ -2,7 +2,6 @@ import { Server } from "socket.io";
 import { prisma } from "../prismaDb/prismaDb";
 import Docker from "dockerode";
 import startContainer from "../controller/DockerOrchestration/startContainer";
-import executeDockerCommand from "../controller/DockerOrchestration/executeDockerCommand";
 // import chokidar from "chokidar";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pty = require("node-pty");
@@ -173,17 +172,27 @@ export const setupSocket = (io: Server) => {
 
           const { code, filePath } = data;
 
-          console.log(`Writing code to ${filePath}`, code);
-
-          // Escape the code string to handle special characters and newlines
-          const command = `printf "%s" "${code}" > ${filePath}`;
-
+          const command = `echo "${code.replace(/"/g, '\\"')}" > ${filePath}`;
+          
           try {
-            const result = await executeDockerCommand({ container, command });
-            console.log(result);
+            const exec = await container.exec({
+              AttachStdout: true,
+              AttachStderr: true,
+              Cmd: ["sh", "-c", command],
+            });
+            
+            const startExec = await exec.start({ Detach: false, Tty: false });
+            
+            startExec.on("data", (data) => {
+              console.log("Exec output:", data.toString());
+            });
+
+            startExec.on("end", () => {
+              socket.emit("success", `Code saved to ${filePath}`);
+            });
           } catch (error) {
-            console.error("Error writing code to file:", error);
-            socket.emit("error", "Failed to write code to file.");
+            console.error("Error writing code to container:", error);
+            socket.emit("error", "Error writing code to container.");
           }
         }
       );
