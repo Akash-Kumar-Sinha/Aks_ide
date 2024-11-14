@@ -42,3 +42,8 @@
 3. ```nvm install v18.10.0```
 4. Check node is installed or not ```node -v```
     - Output should be: ```v18.10.0```
+
+## Start with React vite
+
+- Run ```npm create vite@latest```
+- Run vite project using ```npx vite --host 0.0.0.0 --port 2000```

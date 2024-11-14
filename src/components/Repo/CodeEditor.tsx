@@ -49,8 +49,12 @@ const CodeEditor: React.FC<CodeProps> = ({ selectedFileAbsolutePath }) => {
       });
       console.log("response", response.data.content);
       if (response.status === 200) {
-        setFetchCodeContent(response.data.content);
-        setCodeContent(response.data.content);
+        const cleanContent = response.data.content
+        .replace(/^\uFEFF/, '')
+        .replace(/[^\x20-\x7E\x0A\x0D]/g, '')
+        .trim();
+              setFetchCodeContent(cleanContent);
+        setCodeContent(cleanContent);
       }
     } catch (error) {
       console.error("Error fetching file content:", error);

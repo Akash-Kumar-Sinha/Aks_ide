@@ -24,6 +24,9 @@ const buildFilesTree = async (
 
     if (itemName) {
       if (fileType.startsWith("d")) {
+        if (itemName === "node_modules") {
+          continue;
+        }
         const itemPath = path.join(currentDir, itemName);
         tree[itemName] = await buildFilesTree(container, itemPath);
       } else if (fileType.startsWith("-")) {

@@ -17,25 +17,33 @@ const Playground = () => {
   const [selectedFile, setSelectedFile] = useState("");
   const [selectedFileAbsolutePath, setSelectedFileAbsolutePath] = useState("");
   const [pwd, setPwd] = useState<string>("");
+
   const projectName = useRef<HTMLInputElement>(null);
 
-  const createTemplate = async () => {
-    if (!userProfile) return;
-    try {
-      if (!projectName.current) return;
-
-      const name = projectName.current.value;
-      if (!name) {
-        console.error("Template name is required.");
-        return;
+  const fetchPwd = (data: string) => {
+    const match = data.match(/(\/[^\s]+)/);
+    if (match) {
+      const currentDir = match[1];
+      if (!currentDir.includes(":")) {
+        setPwd(currentDir);
       }
+    }
+  };
 
+  const createTemplate = async () => {
+    if (!userProfile || !projectName.current) return;
+    const name = projectName.current.value;
+    if (!name) {
+      console.error("Template name is required.");
+      return;
+    }
+
+    try {
       const response = await axios.post(
         `${SERVER_URL}/repo/create_repo`,
         { projectName: name },
         { withCredentials: true }
       );
-
       if (response.status === 200) {
         await getFiles(name);
       }
@@ -56,7 +64,6 @@ const Playground = () => {
         { name },
         { withCredentials: true }
       );
-
       if (response.status === 200) {
         setFileStructure(response.data.fileStructure);
       }
@@ -69,18 +76,7 @@ const Playground = () => {
     setSelectedFile("");
     setSelectedFileAbsolutePath("");
     socket.emit("get_pwd");
-
-    const handlePwd = (data: string) => {
-      const match = data.match(/(\/[^\s]+)/);
-      if (match) {
-        const currentDir = match[1];
-        if (!currentDir.includes(":")) {
-          setPwd(currentDir);
-        }
-      }
-    };
-
-    socket.once("receive_pwd", handlePwd);
+    socket.once("receive_pwd", fetchPwd);
     socket.emit("clear_terminal");
     fetchRepoData();
   };
@@ -90,7 +86,6 @@ const Playground = () => {
       setExplorerLoadingStatus(true);
 
       try {
-        console.log("Current Directory:", pwd);
         const response = await axios.get(`${SERVER_URL}/repo/open_repo`, {
           params: { pwd },
           withCredentials: true,
@@ -99,12 +94,17 @@ const Playground = () => {
         if (response.status === 200) {
           setFileStructure(response.data.fileStructure);
         }
-        console.log("openRepo", response.data);
       } catch (error) {
-        console.log("Error opening repository:", error);
+        console.error("Error opening repository:", error);
       } finally {
         setExplorerLoadingStatus(false);
       }
+    }
+  };
+
+  const updateFilePath = () => {
+    if (pwd && selectedFile) {
+      setSelectedFileAbsolutePath(`${pwd}/${selectedFile}`);
     }
   };
 
@@ -120,23 +120,7 @@ const Playground = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedFile) {
-      socket.emit("get_pwd");
-
-      const handlePwd = (data: string) => {
-        const match = data.match(/(\/[^\s]+)/);
-        if (match) {
-          const currentDir = match[1];
-          if (!currentDir.includes(":")) {
-            setPwd(currentDir);
-          }
-        }
-      };
-
-      socket.once("receive_pwd", handlePwd);
-      socket.emit("clear_terminal");
-      setSelectedFileAbsolutePath(`${pwd}${selectedFile}`);
-    }
+    updateFilePath();
   }, [pwd, selectedFile]);
 
   return (
