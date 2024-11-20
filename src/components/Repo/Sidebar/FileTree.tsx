@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { FaFile, FaFolder, FaFolderOpen } from "react-icons/fa";
 
 interface FileTreeProps {
-  tree: Record<string, unknown | null> | null | undefined;
+  tree: Record<string, unknown | null> | null;
   path?: string;
   onSelect?: (path: string) => void;
 }
@@ -25,9 +25,9 @@ const FileTree: React.FC<FileTreeProps> = ({ tree, path = "", onSelect }) => {
   };
 
   return (
-    <div className="w-full border-l border-gray-500">
+    <div>
       {tree && (
-        <div>
+        <>
           {Object.entries(tree)
             .filter(([, value]) => value !== null && typeof value === "object")
             .map(([name, value]) => {
@@ -35,22 +35,23 @@ const FileTree: React.FC<FileTreeProps> = ({ tree, path = "", onSelect }) => {
               const isExpanded = expandedFolders.has(currentPath);
 
               return (
-                <div key={name}>
+                <div key={name} className="pl-4">
                   <div
-                    className="flex items-center hover:bg-zinc-800 cursor-pointer"
+                    className="flex items-center gap-2 cursor-pointer hover:bg-zinc-800 p-1 rounded"
                     onClick={() => toggleFolder(currentPath)}
                   >
                     {isExpanded ? (
-                      <FaFolderOpen className="mr-2 text-yellow-300" />
+                      <FaFolderOpen className="text-yellow-400" />
                     ) : (
-                      <FaFolder className="mr-2 text-yellow-300" />
+                      <FaFolder className="text-yellow-400" />
                     )}
-                    <div className="text-zinc-50 font-normal">{name}</div>
+                    <span className="text-white overflow-hidden">{name}</span>
                   </div>
+
                   {isExpanded && (
-                    <div className="ml-4 text-xs">
+                    <div className="ml-4">
                       <FileTree
-                        tree={value as Record<string, unknown | null>}
+                        tree={value as Record<string, unknown>}
                         path={currentPath}
                         onSelect={onSelect}
                       />
@@ -67,19 +68,15 @@ const FileTree: React.FC<FileTreeProps> = ({ tree, path = "", onSelect }) => {
               return (
                 <div
                   key={name}
-                  className="text-gray-400 cursor-pointer flex items-center hover:bg-zinc-700"
-                  onClick={() => {
-                    if (onSelect) {
-                      onSelect(currentPath);
-                    }
-                  }}
+                  className="flex items-center gap-2 cursor-pointer hover:bg-zinc-700 p-1 rounded pl-4"
+                  onClick={() => onSelect && onSelect(currentPath)}
                 >
-                  <FaFile className="mr-2 text-blue-400" />
-                  {name}
+                  <FaFile className="text-blue-300" />
+                  <span className="text-zinc-300 overflow-hidden">{name}</span>
                 </div>
               );
             })}
-        </div>
+        </>
       )}
     </div>
   );

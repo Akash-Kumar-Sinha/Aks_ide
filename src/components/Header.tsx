@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 
 import useUserProfile from "@/utils/useUserProfile";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import Loading from "./Loading";
 import { Button } from "./ui/button";
+import Loading from "./Loading";
 import LoginPopUp from "./LoginPopUp";
 
 const Header = () => {
@@ -20,29 +20,39 @@ const Header = () => {
     if (userProfile) {
       setProfileUrl(userProfile.avatar);
     }
-  }, [userProfile, navigate]);
+  }, [userProfile]);
 
   return (
-    <header className="fixed top-0 left-0 w-full px-6 h-12 bg-[#1C1D2C] border-b-2 border-[#111116] shadow-lg rounded-b-2xl flex justify-between items-center z-20">
-      <h1 className="text-2xl font-bold text-[#7554ad]">Aks Ide</h1>
+    <header className="w-full px-4 h-12 bg-zinc-950shadow flex justify-between items-center">
+      <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2">
+          <h1 className="text-lg font-bold text-[#7554ad]">Aks IDE</h1>
+        </div>
+      </div>
 
-      {loading && <Loading size={22} />}
-
-      {!userProfile ? (
-        <Button className="bg-[#111116] hover:bg-[#1C1D2C] hover:underline text-[#B2B8C3] px-4 py-1 rounded-lg transition-transform duration-150 ease-in-out transform hover:scale-105">
+      {loading ? (
+        <Loading size={22} />
+      ) : !userProfile ? (
+        <Button className="bg-[#2e2f3e] hover:bg-[#3c3e4f] text-[#b2b8c3] px-4 py-1 rounded-md transition">
           <LoginPopUp />
         </Button>
       ) : (
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center justify-center space-x-4">
+          <button
+            className="text-[#b2b8c3] hover:text-white text-sm transition"
+            onClick={() => alert("Invite functionality here!")}
+          >
+            Invite
+          </button>
           <Avatar
             onClick={profileSettings}
             className="cursor-pointer hover:opacity-90 transition-opacity duration-150"
           >
             <AvatarImage
               src={profileUrl}
-              className="rounded-full border border-gray-600"
+              className="w-8 h-8 rounded-full border border-gray-600"
             />
-            <AvatarFallback className="bg-zinc-700 text-[#EBEBEF] font-semibold">
+            <AvatarFallback className="bg-gray-700 text-white font-semibold">
               PF
             </AvatarFallback>
           </Avatar>

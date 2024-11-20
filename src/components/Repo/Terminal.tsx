@@ -3,6 +3,7 @@ import { Terminal as XTerminal } from "@xterm/xterm";
 import { socket } from "@/utils/Socket";
 import "@xterm/xterm/css/xterm.css";
 import useUserProfile from "@/utils/useUserProfile";
+
 import Loading from "../Loading";
 import { Button } from "../ui/button";
 
@@ -30,7 +31,7 @@ const Terminal: React.FC<TerminalProps> = ({ selectedFile, openRepo }) => {
       rows: 11,
       cols: 100,
       theme: {
-        background: "#111116",
+        background: "#09090B",
         foreground: "#7554ad",
         cursor: "#E0E1DA",
       },
@@ -60,18 +61,19 @@ const Terminal: React.FC<TerminalProps> = ({ selectedFile, openRepo }) => {
   }, [userProfile]);
 
   return (
-    <div className="flex flex-col px-4 bg-zinc-900 rounded-lg shadow-lg overflow-hidden h-full">
+    <div className="flex flex-col px-2 bg-zinc-950 rounded-lg shadow-lg overflow-hidden h-full">
       <div className="flex items-center justify-between">
-        <div className="flex gap-2 text-xs font-semibold text-[#B2B8C3]">
+        <div className="flex gap-2 text-xs font-semibold text-[#B2B8C3] justify-center items-center">
+          
           <span>Terminal</span>
-          <span className="text-gray-400 font-semibold tracking-wider">
+          <span className="text-zinc-400 font-semibold tracking-wider">
             {selectedFile || "No file selected"}
           </span>
         </div>
         {userProfile && (
           <>
-            <div className="text-gray-500 text-xs flex gap-2">
-              <span className="text-gray-400 font-bold">hint:</span>
+            <div className="text-zinc-500 text-xs flex gap-2">
+              <span className="text-zinc-400 font-bold">hint:</span>
               <span>
                 In the terminal, navigate to the desired directory, then click
                 "Open" to view it in the file explorer.
@@ -87,7 +89,7 @@ const Terminal: React.FC<TerminalProps> = ({ selectedFile, openRepo }) => {
           </>
         )}
       </div>
-      <div className="flex-grow border border-gray-600 rounded-lg px-2 py-1 overflow-hidden">
+      <div className="flex-grow border border-zinc-600 rounded-lg px-1 py-1 overflow-hidden">
         {loading ? (
           <div className="flex justify-center items-center h-full">
             <Loading size={80} />

@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 
-import Editor from "@/components/Repo/Editor";
-import Terminal from "@/components/Repo/Terminal";
 import { socket } from "@/utils/Socket";
 import useUserProfile from "@/utils/useUserProfile";
+import SideBar from "@/components/Repo/Sidebar/SideBar";
+import Explorer from "@/components/Repo/Sidebar/Explorer";
+import CodeEditor from "@/components/Repo/CodeEditor";
+import Terminal from "@/components/Repo/Terminal";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -17,6 +19,16 @@ const Playground = () => {
   const [selectedFile, setSelectedFile] = useState("");
   const [selectedFileAbsolutePath, setSelectedFileAbsolutePath] = useState("");
   const [pwd, setPwd] = useState<string>("");
+  const [isExplorerVisible, setExplorerVisible] = useState(true);
+  const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
+
+  const toggleExplorer = () => {
+    setExplorerVisible((prev) => !prev);
+  };
+
+  const handleSelect = (path: string) => {
+    setSelectedFile(path);
+  };
 
   const projectName = useRef<HTMLInputElement>(null);
 
@@ -123,20 +135,77 @@ const Playground = () => {
     updateFilePath();
   }, [pwd, selectedFile]);
 
+  const toggleFullScreen = () => {
+    if (!isFullScreen) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.error("Failed to enter full-screen mode:", err);
+      });
+    } else {
+      document.exitFullscreen().catch((err) => {
+        console.error("Failed to exit full-screen mode:", err);
+      });
+      window.dispatchEvent(new Event("resize"));
+    }
+  };
+
+  useEffect(() => {
+    const onFullScreenChange = () => {
+      setIsFullScreen(!!document.fullscreenElement);
+
+      if (!document.fullscreenElement) {
+        setTimeout(() => {
+          window.dispatchEvent(new Event("resize"));
+        }, 100);
+      }
+    };
+
+    document.addEventListener("fullscreenchange", onFullScreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", onFullScreenChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (pwd) {
+      fetchRepoData();
+    }
+  }, [pwd]);
+
   return (
-    <div className="flex flex-col h-screen w-full text-sm">
-      <div className="flex-grow mt-12 w-full overflow-hidden">
-        <Editor
-          projectName={projectName}
-          createTemplate={createTemplate}
-          fileStructure={fileStructure}
-          setSelectedFile={setSelectedFile}
-          explorerloadingStatus={explorerloadingStatus}
-          selectedFileAbsolutePath={selectedFileAbsolutePath}
+    <div className="w-screen h-full border-r border-zinc-900">
+      <div className="relative h-full flex border-t border-zinc-900">
+        <SideBar
+          toggleFullScreen={toggleFullScreen}
+          isFullScreen={isFullScreen}
+          isExplorerVisible={isExplorerVisible}
+          toggleExplorer={toggleExplorer}
         />
-      </div>
-      <div className="h-56 border-t border-gray-600 rounded-lg w-full">
-        <Terminal selectedFile={selectedFile} openRepo={openRepo} />
+        <div
+          className={`transition-all duration-300 ease-in-out ${
+            isExplorerVisible ? "w-60" : "w-0"
+          } flex-shrink-0 bg-zinc-900 border-r border-zinc-800`}
+          style={{ overflow: isExplorerVisible ? "visible" : "hidden" }}
+        >
+          {isExplorerVisible && (
+            <Explorer
+              projectName={projectName}
+              createTemplate={createTemplate}
+              fileStructure={fileStructure}
+              explorerloadingStatus={explorerloadingStatus}
+              handleSelect={handleSelect}
+            />
+          )}
+        </div>
+        <div className="flex flex-col flex-grow overflow-hidden">
+          <div className="flex-grow flex flex-col overflow-hidden">
+            <CodeEditor selectedFile={selectedFile} selectedFileAbsolutePath={selectedFileAbsolutePath} />
+          </div>
+
+          <div className="h-56">
+            <Terminal selectedFile={selectedFile} openRepo={openRepo} />
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -8,10 +8,10 @@ import Playground from "./pages/Playground";
 
 const App = () => {
   return (
-    <div className="relative h-screen flex flex-col bg-zinc-950 text-[#EBEBEF]">
+    <div className="h-screen flex flex-col bg-zinc-950 text-[#EBEBEF]">
       <Header />
 
-      <div>
+      <div className="flex-grow overflow-auto">
         <Routes>
           <Route path="/auth" element={<Auth />} />
           <Route
