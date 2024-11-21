@@ -32,7 +32,7 @@ const Terminal: React.FC<TerminalProps> = ({ selectedFile, openRepo }) => {
       cols: 100,
       theme: {
         background: "#09090B",
-        foreground: "#7554ad",
+        foreground: "#9333ea",
         cursor: "#E0E1DA",
       },
       fontSize: 14,
@@ -62,48 +62,51 @@ const Terminal: React.FC<TerminalProps> = ({ selectedFile, openRepo }) => {
 
   return (
     <div className="flex flex-col px-2 bg-zinc-950 rounded-lg shadow-lg overflow-hidden h-full">
-      <div className="flex items-center justify-between">
-        <div className="flex gap-2 text-xs font-semibold text-[#B2B8C3] justify-center items-center">
-          
-          <span>Terminal</span>
-          <span className="text-zinc-400 font-semibold tracking-wider">
-            {selectedFile || "No file selected"}
-          </span>
-        </div>
-        {userProfile && (
-          <>
-            <div className="text-zinc-500 text-xs flex gap-2">
-              <span className="text-zinc-400 font-bold">hint:</span>
-              <span>
-                In the terminal, navigate to the desired directory, then click
-                "Open" to view it in the file explorer.
-              </span>
-            </div>
-            <Button
-              variant="default"
-              onClick={openRepo}
-              className="bg-[#7554ad] text-[#EBEBEF] hover:bg-[#5b3f8b] transition-all duration-300 shadow-md text-xs px-4 h-fit m-1 py-1 rounded-lg"
-            >
-              Open
-            </Button>
-          </>
-        )}
+    <div className="flex items-center justify-between">
+      <div className="flex gap-2 text-xs font-semibold text-[#B2B8C3] justify-center items-center">
+        
+        <span>Terminal</span>
+        <span className="text-yellow-400 font-semibold tracking-wider">
+          {selectedFile || "No file selected"}
+        </span>
       </div>
+      {userProfile && (
+        <>
+          <div className="text-zinc-500 text-xs hidden lg:block">
+            <span className="text-zinc-400 font-bold">hint:{" "}</span>
+            <span >
+              In the terminal, navigate to the desired directory, then click
+              "Open" to view it in the file explorer.
+            </span>
+          </div>
+          <Button
+            variant="default"
+            onClick={openRepo}
+            className="bg-purple-600 hover:bg-purple-500 text-white transition-all duration-300 shadow-md text-xs px-4 h-fit m-1 py-1 rounded-lg"
+          >
+            Open
+          </Button>
+        </>
+      )}
+      </div>
+
+    
       <div className="flex-grow border border-zinc-600 rounded-lg px-1 py-1 overflow-hidden">
         {loading ? (
           <div className="flex justify-center items-center h-full">
-            <Loading size={80} />
+            <Loading size={60} />
           </div>
         ) : !userProfile ? (
-          <span className="flex justify-center items-center h-full text-2xl font-semibold tracking-wider text-[#5b3f8b]">
+          <span className="flex justify-center items-center h-full text-xl font-semibold tracking-wider text-[#5b3f8b]">
             You are not logged in...
           </span>
         ) : (
-          <div ref={terminalRef} className="h-full"></div>
+        <div ref={terminalRef} className="h-full w-full overflow-auto"></div>
         )}
       </div>
     </div>
   );
 };
+
 
 export default Terminal;

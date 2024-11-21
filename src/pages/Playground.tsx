@@ -7,6 +7,7 @@ import SideBar from "@/components/Repo/Sidebar/SideBar";
 import Explorer from "@/components/Repo/Sidebar/Explorer";
 import CodeEditor from "@/components/Repo/CodeEditor";
 import Terminal from "@/components/Repo/Terminal";
+import { SidebarTabs } from "@/utils/types/types";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -21,10 +22,9 @@ const Playground = () => {
   const [pwd, setPwd] = useState<string>("");
   const [isExplorerVisible, setExplorerVisible] = useState(true);
   const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
-
-  const toggleExplorer = () => {
-    setExplorerVisible((prev) => !prev);
-  };
+  const [activeSidebarTab, setActiveSidebarTab] = useState<SidebarTabs>(
+    SidebarTabs.EXPLORER
+  );
 
   const handleSelect = (path: string) => {
     setSelectedFile(path);
@@ -120,6 +120,44 @@ const Playground = () => {
     }
   };
 
+  const handleSidebarTabSwitch = (tab: SidebarTabs) => {
+    switch (tab) {
+      case SidebarTabs.EXPLORER:
+        if (activeSidebarTab === SidebarTabs.EXPLORER) {
+          setExplorerVisible((prev) => !prev);
+        }else{
+          setExplorerVisible(true);
+        }
+        setActiveSidebarTab(SidebarTabs.EXPLORER);
+        break;
+
+      case SidebarTabs.GIT:
+        if (activeSidebarTab === SidebarTabs.GIT) {
+          setExplorerVisible((prev) => !prev);
+        }else{
+          setExplorerVisible(true);
+        }
+        setActiveSidebarTab(SidebarTabs.GIT);
+
+        break;
+
+      case SidebarTabs.DOCUMENT:
+        if (activeSidebarTab === SidebarTabs.DOCUMENT) {
+          setExplorerVisible((prev) => !prev);
+        }else{
+          setExplorerVisible(true);
+        }
+        setActiveSidebarTab(SidebarTabs.DOCUMENT);
+
+        break;
+
+      default:
+        console.error("Unhandled tab:", tab);
+        setExplorerVisible(false);
+        break;
+    }
+  };
+
   useEffect(() => {
     const handleConnect = () => {
       console.log("Connected with socket ID:", socket.id);
@@ -173,18 +211,20 @@ const Playground = () => {
   }, [pwd]);
 
   return (
-    <div className="w-screen h-full border-r border-zinc-900">
-      <div className="relative h-full flex border-t border-zinc-900">
+    <div className="w-screen h-full flex border-r border-zinc-900">
+      <div className="relative h-full flex border-t border-zinc-900 w-full">
         <SideBar
           toggleFullScreen={toggleFullScreen}
           isFullScreen={isFullScreen}
           isExplorerVisible={isExplorerVisible}
-          toggleExplorer={toggleExplorer}
+          handleSidebarTabSwitch={(tab: SidebarTabs) =>
+            handleSidebarTabSwitch(tab)
+          }
         />
         <div
-          className={`transition-all duration-300 ease-in-out ${
-            isExplorerVisible ? "w-60" : "w-0"
-          } flex-shrink-0 bg-zinc-900 border-r border-zinc-800`}
+         className={`transition-transform duration-300 ease-in-out flex-shrink-0 bg-zinc-900 border-r border-zinc-800 ${
+          isExplorerVisible ? "translate-x-0" : "-translate-x-full"
+        }`}
           style={{ overflow: isExplorerVisible ? "visible" : "hidden" }}
         >
           {isExplorerVisible && (
@@ -194,15 +234,21 @@ const Playground = () => {
               fileStructure={fileStructure}
               explorerloadingStatus={explorerloadingStatus}
               handleSelect={handleSelect}
+              activeSidebarTab={activeSidebarTab}
+              isExplorerVisible={isExplorerVisible}
             />
           )}
         </div>
+
         <div className="flex flex-col flex-grow overflow-hidden">
           <div className="flex-grow flex flex-col overflow-hidden">
-            <CodeEditor selectedFile={selectedFile} selectedFileAbsolutePath={selectedFileAbsolutePath} />
+            <CodeEditor
+              selectedFile={selectedFile}
+              selectedFileAbsolutePath={selectedFileAbsolutePath}
+            />
           </div>
 
-          <div className="h-56">
+          <div className="h-56  flex-shrink-0">
             <Terminal selectedFile={selectedFile} openRepo={openRepo} />
           </div>
         </div>

@@ -99,14 +99,15 @@ const CodeEditor: React.FC<CodeProps> = ({
 
   return (
     <>
-      {contentLoading ? (
-        <div className="h-full w-full flex flex-col justify-center items-center">
-          <Loading size={70} />
-          <p className="mt-4 text-zinc-300 text-lg">Opening directory...</p>
-        </div>
-      ) : (
-        <>
-          {selectedFile ? (
+    {contentLoading ? (
+      <div className="h-full w-full flex flex-col justify-center items-center bg-zinc-950">
+        <Loading size={70} />
+        <p className="mt-4 text-zinc-300 text-lg">Opening file...</p>
+      </div>
+    ) : (
+      <>
+        {selectedFile ? (
+          <div className="w-full h-full bg-zinc-900 border border-zinc-600 rounded-lg overflow-hidden">
             <Editor
               defaultLanguage={language}
               theme="vs-dark"
@@ -120,17 +121,20 @@ const CodeEditor: React.FC<CodeProps> = ({
                 lineNumbers: "on",
                 scrollBeyondLastLine: false,
                 wordWrap: "on",
+                wrappingIndent: "same",
               }}
               loading={<Loading />}
             />
-          ) : (
-            <div className="h-full w-full flex flex-col justify-center items-center text-yellow-400">
-              Aks Ide
-            </div>
-          )}
-        </>
-      )}
-    </>
+          </div>
+        ) : (
+          <div className="h-full w-full flex flex-col text-center justify-center items-center text-yellow-400">
+            <h1 className="lg:text-3xl font-semibold">Aks IDE</h1>
+            <p className="lg:text-lg mt-4 text-center">Select a file to begin coding</p>
+          </div>
+        )}
+      </>
+    )}
+  </>
   );
 };
 

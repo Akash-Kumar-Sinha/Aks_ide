@@ -23,10 +23,10 @@ const Header = () => {
   }, [userProfile]);
 
   return (
-    <header className="w-full px-4 h-12 bg-zinc-950shadow flex justify-between items-center">
+    <header className="w-full px-4 h-12 bg-zinc-950 shadow flex justify-between items-center">
       <div className="flex items-center space-x-4">
         <div className="flex items-center space-x-2">
-          <h1 className="text-lg font-bold text-[#7554ad]">Aks IDE</h1>
+          <h1 className="text-lg font-bold text-purple-600">Aks IDE</h1>
         </div>
       </div>
 
@@ -38,12 +38,6 @@ const Header = () => {
         </Button>
       ) : (
         <div className="flex items-center justify-center space-x-4">
-          <button
-            className="text-[#b2b8c3] hover:text-white text-sm transition"
-            onClick={() => alert("Invite functionality here!")}
-          >
-            Invite
-          </button>
           <Avatar
             onClick={profileSettings}
             className="cursor-pointer hover:opacity-90 transition-opacity duration-150"
