@@ -1,15 +1,13 @@
-FROM node:18-alpine
+FROM node:20
 
 WORKDIR /app
 
-RUN yarn config set "strict-ssl" false
+COPY package* .
 
-COPY package.json yarn.lock ./
-
-RUN yarn install
+RUN npm install
 
 COPY . .
 
 EXPOSE 5173
 
-CMD ["yarn", "run", "dev"]
+CMD ["npm", "run", "dev"]
