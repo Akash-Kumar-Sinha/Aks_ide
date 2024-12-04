@@ -8,7 +8,6 @@ const Document = () => {
 
   const copyToClipboard = (command: string) => {
     navigator.clipboard.writeText(command).then(() => {
-      alert("Command copied to clipboard!");
     });
   };
 

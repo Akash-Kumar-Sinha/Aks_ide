@@ -49,7 +49,7 @@ const Explorer: React.FC<ExplorerProps> = ({
           </div>
         )}
         {activeSidebarTab === SidebarTabs.EXPLORER && (
-        <div className="w-40 min-w-full max-w-40 flex flex-col overflow-x-scroll">
+        <div className="w-40 min-w-full max-w-40 flex flex-col overflow-x-hidden">
             <div className="p-4 border-b border-zinc-800 text-white text-sm font-semibold">
               Explorer
             </div>

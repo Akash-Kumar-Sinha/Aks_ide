@@ -45,6 +45,7 @@ const Auth = () => {
         if (response.data.success === true) {
           document.cookie = `accessToken=${response.data.accessToken}`;
           navigate("/");
+          window.location.reload();
         }
       }
     } catch (error) {
