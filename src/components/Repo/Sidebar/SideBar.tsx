@@ -20,7 +20,7 @@ interface SideBarProps {
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
-const SideBar: React.FC<SideBarProps> = ({
+const SideBar: React.FC<SideBarProps> = React.memo(({
   isExplorerVisible,
   isFullScreen,
   toggleFullScreen,
@@ -104,6 +104,6 @@ const SideBar: React.FC<SideBarProps> = ({
       </div>
     </div>
   );
-};
+});
 
 export default SideBar;

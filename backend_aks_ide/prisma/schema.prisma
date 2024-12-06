@@ -42,7 +42,6 @@ model Profile {
   email  String  @unique
   name   String?
   avatar String?
-  repoCount Int? @default(0)
   dockerContainerId String?
 
   createdAt DateTime @default(now())
@@ -50,20 +49,5 @@ model Profile {
 
   user   User   @relation(fields: [userId], references: [id])
   userId String @unique
-
-  repositories Repository[]
   
-}
-
-model Repository {
-  id          String  @id @default(cuid())
-  name        String  @unique
-  techStack   String?
-  description String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  profile   Profile @relation(fields: [profileId], references: [id])
-  profileId String 
 }

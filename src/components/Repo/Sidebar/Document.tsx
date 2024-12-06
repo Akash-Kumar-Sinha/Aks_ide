@@ -1,5 +1,6 @@
 import useInstallationGuide from "@/utils/useInstallationGuide";
 import { useState } from "react";
+import toast from "react-hot-toast";
 import { IoCopyOutline } from "react-icons/io5";
 
 const Document = () => {
@@ -8,6 +9,7 @@ const Document = () => {
 
   const copyToClipboard = (command: string) => {
     navigator.clipboard.writeText(command).then(() => {
+      toast.success('Copied')
     });
   };
 

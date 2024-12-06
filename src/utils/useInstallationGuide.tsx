@@ -54,6 +54,21 @@ const useInstallationGuide = () => {
       keywords: ["node", "typescript", "ts-node", "ts"],
     },
     {
+      title: "Rust Installation Guide",
+      description:
+        "Install Rust, a systems programming language, and verify its version.",
+      commands: [
+        "apt update",
+        "curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh",
+        `. "$HOME/.cargo/env"`,
+        "rustc --version",
+        "apt update",
+        "apt install build-essential",
+        "gcc --version",
+      ],
+      keywords: ["rust", "cargo", "rustc"],
+    },
+    {
       title: "Git Installation Guide",
       description:
         "Install Git, a version control system, and verify its version.",

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 
 import { socket } from "@/utils/Socket";
@@ -26,13 +26,13 @@ const Playground = () => {
     SidebarTabs.EXPLORER
   );
 
-  const handleSelect = (path: string) => {
+  const handleSelect = useCallback((path: string) => {
     setSelectedFile(path);
-  };
+  }, []);
 
   const projectName = useRef<HTMLInputElement>(null);
 
-  const fetchPwd = (data: string) => {
+  const fetchPwd = useCallback((data: string) => {
     const match = data.match(/(\/[^\s]+)/);
     if (match) {
       const currentDir = match[1];
@@ -40,31 +40,34 @@ const Playground = () => {
         setPwd(currentDir);
       }
     }
-  };
+  }, []);
 
-  const createTemplate = async () => {
+  // const createTemplate = async () => {
+  //   if (!userProfile || !projectName.current) return;
+  //   const name = projectName.current.value;
+  //   if (!name) {
+  //     console.error("Template name is required.");
+  //     return;
+  //   }
+
+  //   try {
+  //     const response = await axios.post(
+  //       `${SERVER_URL}/repo/create_repo`,
+  //       { projectName: name },
+  //       { withCredentials: true }
+  //     );
+  //     if (response.status === 200) {
+  //       await getFiles(name);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error creating template:", error);
+  //   }
+  // };
+
+  const getFiles = useCallback(async () => {
+    console.log("getFiles called");
     if (!userProfile || !projectName.current) return;
     const name = projectName.current.value;
-    if (!name) {
-      console.error("Template name is required.");
-      return;
-    }
-
-    try {
-      const response = await axios.post(
-        `${SERVER_URL}/repo/create_repo`,
-        { projectName: name },
-        { withCredentials: true }
-      );
-      if (response.status === 200) {
-        await getFiles(name);
-      }
-    } catch (error) {
-      console.error("Error creating template:", error);
-    }
-  };
-
-  const getFiles = async (name: string) => {
     if (!name) {
       console.log("Repository name is missing.");
       return;
@@ -82,18 +85,10 @@ const Playground = () => {
     } catch (err) {
       console.error("Error fetching file structure:", err);
     }
-  };
+  }, [userProfile]);
 
-  const openRepo = async () => {
-    setSelectedFile("");
-    setSelectedFileAbsolutePath("");
-    socket.emit("get_pwd");
-    socket.once("receive_pwd", fetchPwd);
-    socket.emit("clear_terminal");
-    fetchRepoData();
-  };
-
-  const fetchRepoData = async () => {
+  const fetchRepoData = useCallback(async () => {
+    console.log("fetchRepoData called");
     if (pwd) {
       setExplorerLoadingStatus(true);
 
@@ -112,20 +107,30 @@ const Playground = () => {
         setExplorerLoadingStatus(false);
       }
     }
-  };
+  }, [pwd]);
 
-  const updateFilePath = () => {
+  const openRepo = useCallback(async () => {
+    console.log("openRepo called");
+    setSelectedFile("");
+    setSelectedFileAbsolutePath("");
+    socket.emit("get_pwd");
+    socket.once("receive_pwd", fetchPwd);
+    socket.emit("clear_terminal");
+    fetchRepoData();
+  }, [fetchPwd, fetchRepoData]);
+
+  const updateFilePath = useCallback(() => {
     if (pwd && selectedFile) {
       setSelectedFileAbsolutePath(`${pwd}/${selectedFile}`);
     }
-  };
+  }, [pwd, selectedFile]);
 
-  const handleSidebarTabSwitch = (tab: SidebarTabs) => {
+  const handleSidebarTabSwitch = useCallback((tab: SidebarTabs) => {
     switch (tab) {
       case SidebarTabs.EXPLORER:
         if (activeSidebarTab === SidebarTabs.EXPLORER) {
           setExplorerVisible((prev) => !prev);
-        }else{
+        } else {
           setExplorerVisible(true);
         }
         setActiveSidebarTab(SidebarTabs.EXPLORER);
@@ -134,7 +139,7 @@ const Playground = () => {
       case SidebarTabs.GIT:
         if (activeSidebarTab === SidebarTabs.GIT) {
           setExplorerVisible((prev) => !prev);
-        }else{
+        } else {
           setExplorerVisible(true);
         }
         setActiveSidebarTab(SidebarTabs.GIT);
@@ -144,7 +149,7 @@ const Playground = () => {
       case SidebarTabs.DOCUMENT:
         if (activeSidebarTab === SidebarTabs.DOCUMENT) {
           setExplorerVisible((prev) => !prev);
-        }else{
+        } else {
           setExplorerVisible(true);
         }
         setActiveSidebarTab(SidebarTabs.DOCUMENT);
@@ -156,7 +161,7 @@ const Playground = () => {
         setExplorerVisible(false);
         break;
     }
-  };
+  }, [activeSidebarTab]);
 
   useEffect(() => {
     const handleConnect = () => {
@@ -171,9 +176,9 @@ const Playground = () => {
 
   useEffect(() => {
     updateFilePath();
-  }, [pwd, selectedFile]);
+  }, [pwd, selectedFile, updateFilePath]);
 
-  const toggleFullScreen = () => {
+  const toggleFullScreen = useCallback(() => {
     if (!isFullScreen) {
       document.documentElement.requestFullscreen().catch((err) => {
         console.error("Failed to enter full-screen mode:", err);
@@ -184,7 +189,7 @@ const Playground = () => {
       });
       window.dispatchEvent(new Event("resize"));
     }
-  };
+  }, [isFullScreen]);
 
   useEffect(() => {
     const onFullScreenChange = () => {
@@ -208,7 +213,7 @@ const Playground = () => {
     if (pwd) {
       fetchRepoData();
     }
-  }, [pwd]);
+  }, [fetchRepoData, pwd]);
 
   return (
     <div className="w-screen h-full flex border-r border-zinc-900">
@@ -222,15 +227,15 @@ const Playground = () => {
           }
         />
         <div
-         className={`transition-transform duration-300 ease-in-out flex-shrink-0 bg-zinc-900 border-r border-zinc-800 ${
-          isExplorerVisible ? "translate-x-0" : "-translate-x-full"
-        }`}
+          className={`transition-transform duration-300 ease-in-out flex-shrink-0 bg-zinc-900 border-r border-zinc-800 ${
+            isExplorerVisible ? "translate-x-0" : "-translate-x-full"
+          }`}
           style={{ overflow: isExplorerVisible ? "visible" : "hidden" }}
         >
           {isExplorerVisible && (
             <Explorer
               projectName={projectName}
-              createTemplate={createTemplate}
+              createTemplate={getFiles}
               fileStructure={fileStructure}
               explorerloadingStatus={explorerloadingStatus}
               handleSelect={handleSelect}

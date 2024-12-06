@@ -19,7 +19,7 @@ interface ExplorerProps {
   isExplorerVisible: boolean;
 }
 
-const Explorer: React.FC<ExplorerProps> = ({
+const Explorer: React.FC<ExplorerProps> = React.memo(({
   fileStructure = {},
   createTemplate,
   projectName,
@@ -88,6 +88,6 @@ const Explorer: React.FC<ExplorerProps> = ({
       </div>
     </div>
   );
-};
+});
 
 export default Explorer;
