@@ -1,36 +1,43 @@
 import { NextFunction, Request, Response } from "express";
-import jwt from "jsonwebtoken";
-
 import { prisma } from "../prismaDb/prismaDb";
+import { verifyAccessToken, verifyRefreshToken } from "./createTokens";
 
 const verifyToken = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  const { accessToken: token } = req.cookies;
+  const refreshToken = req.cookies.refreshToken;
+  const acessToken = req.headers["authorization"]?.split(" ")[1];
 
-  if (!token) {
+  if (!refreshToken || !acessToken) {
     res
       .status(401)
       .json({ message: "Unauthorized: No token provided", authorized: false });
     return;
   }
 
-  const JWTSECRET = process.env.JWT_SECRET;
-  if (!JWTSECRET) {
-    res.status(500).json({ message: "Internal server error" });
+  const decodedRefreshToken = await verifyRefreshToken(refreshToken);
+  const decodedAccessToken = verifyAccessToken(acessToken);
+
+  if (!decodedRefreshToken || !decodedAccessToken) {
+    res.status(401).json({
+      message: "Unauthorized: Invalid or expired token",
+      authorized: false,
+    });
+    return;
+  }
+
+  if (decodedRefreshToken.id !== decodedAccessToken.userId) {
+    res
+      .status(401)
+      .json({ message: "Unauthorized: Invalid", authorized: false });
     return;
   }
 
   try {
-    const { accessToken, providerId } = jwt.verify(token, JWTSECRET) as {
-      accessToken: string;
-      providerId: string;
-    };
-
     const user = await prisma.user.findUnique({
-      where: { providerId },
+      where: { id: decodedRefreshToken.id },
     });
 
     if (!user) {
@@ -40,21 +47,13 @@ const verifyToken = async (
       return;
     }
 
-    if (accessToken !== user.accessToken) {
-      res
-        .status(401)
-        .json({ message: "Unauthorized: Invalid token", authorized: false });
-      return;
-    }
-
     res.status(200).json({ message: "Token is valid", authorized: true });
     next();
   } catch (error) {
     console.error("Error verifying token:", error);
     res
-      .status(401)
-      .json({ message: "Unauthorized: Invalid token", authorized: false });
-    return;
+      .status(500)
+      .json({ message: "Internal Server Error", authorized: false });
   }
 };
 

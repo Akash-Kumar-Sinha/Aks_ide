@@ -22,6 +22,8 @@ const useInstallationGuide = () => {
         "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash",
         "curl -k -o- http://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash",
         "curl --insecure -o- http://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash",
+        "wget https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh --no-check-certificate  && sleep 3 && bash install.sh",
+        "wget https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh --no-check-certificate  && bash install.sh",
         "source ~/.bashrc",
         "nvm install v18.10.0",
         "node -v",

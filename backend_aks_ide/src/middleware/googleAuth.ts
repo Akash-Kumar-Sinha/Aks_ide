@@ -8,6 +8,7 @@ import {
 import dotenv from "dotenv";
 
 import { prisma } from "../prismaDb/prismaDb";
+import { generateAccessToken } from "../utils/createTokens";
 
 dotenv.config();
 
@@ -28,8 +29,8 @@ passport.use(
       scope: ["profile", "email"],
     },
     async (
-      req: Request,
-      accessToken: string,
+      _req: Request,
+      _accessToken: string,
       refreshToken: string,
       profile: GoogleProfile,
       done: VerifyCallback
@@ -49,13 +50,15 @@ passport.use(
           user = await prisma.user.update({
             where: { email },
             data: {
-              accessToken: accessToken,
-              refreshToken: refreshToken || undefined,
+              refreshToken: refreshToken,
               updatedAt: new Date(),
             },
           });
 
-          return done(null, user);
+          const accessToken = generateAccessToken({ email, userId: user.id });
+
+          done(null, { user, accessToken, refreshToken });
+          return;
         }
 
         user = await prisma.user.create({
@@ -66,19 +69,22 @@ passport.use(
             avatar: profile.photos ? profile.photos[0].value : undefined,
             provider: "GOOGLE",
             providerId: profile.id,
-            accessToken: accessToken,
-            refreshToken: refreshToken || undefined,
+            refreshToken: refreshToken,
             profile: {
               create: {
                 email: email,
                 name: profile.displayName,
                 avatar: profile.photos ? profile.photos[0].value : undefined,
+                provider: "GOOGLE",
               },
             },
           },
         });
 
-        done(null, user);
+        const accessToken = generateAccessToken({ email, userId: user.id });
+
+        done(null, { user, accessToken, refreshToken });
+        return;
       } catch (error) {
         console.error("Error in Google strategy:", error);
         done(error);

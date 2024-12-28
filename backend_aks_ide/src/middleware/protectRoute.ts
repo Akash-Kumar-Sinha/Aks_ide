@@ -1,29 +1,36 @@
 import { Request, Response, NextFunction } from "express";
-import jwt, { JwtPayload } from "jsonwebtoken";
+import { JwtPayload } from "jsonwebtoken";
+import { verifyAccessToken } from "../utils/createTokens";
 
 interface AuthenticatedRequest extends Request {
   user?: string | JwtPayload;
 }
 
-const protectRoute = (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
-  const { accessToken: token } = req.cookies;
+const protectRoute = (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): void => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
 
   if (!token) {
     res.status(401).json({ message: "Unauthorized: No token provided" });
-    return
-  }
-
-  const JWTSECRET = process.env.JWT_SECRET;
-  if (!JWTSECRET) {
-    throw new Error("Missing JWT_SECRET");
+    return;
   }
 
   try {
-    req.user = jwt.verify(token, JWTSECRET);
+    const verifiedUser = verifyAccessToken(token);
+    if (!verifiedUser) {
+      res.status(403).json({ message: "Forbidden: Invalid token" });
+      return;
+    }
+    req.user = verifiedUser;
     next();
-  } catch {
+  } catch (error) {
+    console.error("Error verifying token:", error);
     res.status(403).json({ message: "Forbidden: Invalid token" });
-    return 
+    return;
   }
 };
 

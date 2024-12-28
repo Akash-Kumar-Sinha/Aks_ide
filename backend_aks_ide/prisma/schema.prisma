@@ -29,7 +29,6 @@ model User {
   provider       Provider
   providerId     String   @unique
   refreshToken   String?
-  accessToken    String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -42,6 +41,7 @@ model Profile {
   email  String  @unique
   name   String?
   avatar String?
+  provider  Provider
   dockerContainerId String?
 
   createdAt DateTime @default(now())

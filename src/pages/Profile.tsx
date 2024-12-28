@@ -1,5 +1,4 @@
 import { useRef, useState } from "react";
-import axios from "axios";
 import { CiEdit } from "react-icons/ci";
 
 import {
@@ -17,6 +16,8 @@ import useUserProfile from "@/utils/useUserProfile";
 import { Input } from "@/components/ui/input";
 import Back from "@/components/Back";
 import Loading from "@/components/Loading";
+import apiClient from "@/utils/apiClient";
+import { getAccessTokenFromLocalStorage } from "@/utils/getAccessTokenFromLocalStorage";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -26,12 +27,17 @@ const Profile = () => {
   const userName = useRef<HTMLInputElement>(null);
 
   const changeName = async () => {
+    const accessToken = getAccessTokenFromLocalStorage();
     const name = userName.current?.value;
 
-    const response = await axios.put(
+    const response = await apiClient.put(
       `${SERVER_URL}/auth/update_name`,
       { name },
-      { withCredentials: true }
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
     );
 
     if (response.status === 200) {

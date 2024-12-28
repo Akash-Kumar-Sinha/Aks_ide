@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import axios from "axios";
 
 import { socket } from "@/utils/Socket";
 import useUserProfile from "@/utils/useUserProfile";
@@ -8,6 +7,8 @@ import Explorer from "@/components/Repo/Sidebar/Explorer";
 import CodeEditor from "@/components/Repo/CodeEditor";
 import Terminal from "@/components/Repo/Terminal";
 import { SidebarTabs } from "@/utils/types/types";
+import apiClient from "@/utils/apiClient";
+import { getAccessTokenFromLocalStorage } from "@/utils/getAccessTokenFromLocalStorage";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -42,28 +43,6 @@ const Playground = () => {
     }
   }, []);
 
-  // const createTemplate = async () => {
-  //   if (!userProfile || !projectName.current) return;
-  //   const name = projectName.current.value;
-  //   if (!name) {
-  //     console.error("Template name is required.");
-  //     return;
-  //   }
-
-  //   try {
-  //     const response = await axios.post(
-  //       `${SERVER_URL}/repo/create_repo`,
-  //       { projectName: name },
-  //       { withCredentials: true }
-  //     );
-  //     if (response.status === 200) {
-  //       await getFiles(name);
-  //     }
-  //   } catch (error) {
-  //     console.error("Error creating template:", error);
-  //   }
-  // };
-
   const getFiles = useCallback(async () => {
     console.log("getFiles called");
     if (!userProfile || !projectName.current) return;
@@ -74,10 +53,15 @@ const Playground = () => {
     }
 
     try {
-      const response = await axios.post(
+      const accessToken = getAccessTokenFromLocalStorage();
+      const response = await apiClient.post(
         `${SERVER_URL}/repo/files`,
         { name },
-        { withCredentials: true }
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
       );
       if (response.status === 200) {
         setFileStructure(response.data.fileStructure);
@@ -93,9 +77,13 @@ const Playground = () => {
       setExplorerLoadingStatus(true);
 
       try {
-        const response = await axios.get(`${SERVER_URL}/repo/open_repo`, {
+        const accessToken = getAccessTokenFromLocalStorage();
+
+        const response = await apiClient.get(`${SERVER_URL}/repo/open_repo`, {
           params: { pwd },
-          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
         });
 
         if (response.status === 200) {
@@ -125,43 +113,46 @@ const Playground = () => {
     }
   }, [pwd, selectedFile]);
 
-  const handleSidebarTabSwitch = useCallback((tab: SidebarTabs) => {
-    switch (tab) {
-      case SidebarTabs.EXPLORER:
-        if (activeSidebarTab === SidebarTabs.EXPLORER) {
-          setExplorerVisible((prev) => !prev);
-        } else {
-          setExplorerVisible(true);
-        }
-        setActiveSidebarTab(SidebarTabs.EXPLORER);
-        break;
+  const handleSidebarTabSwitch = useCallback(
+    (tab: SidebarTabs) => {
+      switch (tab) {
+        case SidebarTabs.EXPLORER:
+          if (activeSidebarTab === SidebarTabs.EXPLORER) {
+            setExplorerVisible((prev) => !prev);
+          } else {
+            setExplorerVisible(true);
+          }
+          setActiveSidebarTab(SidebarTabs.EXPLORER);
+          break;
 
-      case SidebarTabs.GIT:
-        if (activeSidebarTab === SidebarTabs.GIT) {
-          setExplorerVisible((prev) => !prev);
-        } else {
-          setExplorerVisible(true);
-        }
-        setActiveSidebarTab(SidebarTabs.GIT);
+        case SidebarTabs.GIT:
+          if (activeSidebarTab === SidebarTabs.GIT) {
+            setExplorerVisible((prev) => !prev);
+          } else {
+            setExplorerVisible(true);
+          }
+          setActiveSidebarTab(SidebarTabs.GIT);
 
-        break;
+          break;
 
-      case SidebarTabs.DOCUMENT:
-        if (activeSidebarTab === SidebarTabs.DOCUMENT) {
-          setExplorerVisible((prev) => !prev);
-        } else {
-          setExplorerVisible(true);
-        }
-        setActiveSidebarTab(SidebarTabs.DOCUMENT);
+        case SidebarTabs.DOCUMENT:
+          if (activeSidebarTab === SidebarTabs.DOCUMENT) {
+            setExplorerVisible((prev) => !prev);
+          } else {
+            setExplorerVisible(true);
+          }
+          setActiveSidebarTab(SidebarTabs.DOCUMENT);
 
-        break;
+          break;
 
-      default:
-        console.error("Unhandled tab:", tab);
-        setExplorerVisible(false);
-        break;
-    }
-  }, [activeSidebarTab]);
+        default:
+          console.error("Unhandled tab:", tab);
+          setExplorerVisible(false);
+          break;
+      }
+    },
+    [activeSidebarTab]
+  );
 
   useEffect(() => {
     const handleConnect = () => {
@@ -253,7 +244,7 @@ const Playground = () => {
             />
           </div>
 
-          <div className="h-56  flex-shrink-0">
+          <div className="h-56">
             <Terminal selectedFile={selectedFile} openRepo={openRepo} />
           </div>
         </div>

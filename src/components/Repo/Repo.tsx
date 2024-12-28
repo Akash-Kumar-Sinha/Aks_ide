@@ -1,6 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useRef, useState } from "react";
-import axios from "axios";
 import { motion } from "framer-motion";
 
 import {
@@ -26,6 +25,8 @@ import { Input } from "../ui/input";
 import { RepositoryInfo } from "@/utils/types/types";
 import useUserProfile from "@/utils/useUserProfile";
 import Loading from "../Loading";
+import apiClient from "@/utils/apiClient";
+import { getAccessTokenFromLocalStorage } from "@/utils/getAccessTokenFromLocalStorage";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -39,6 +40,7 @@ const Repo = () => {
     setLoadingStatus(true);
     try {
       if (!templateName.current) return;
+      const accessToken = getAccessTokenFromLocalStorage();
 
       const name = templateName.current.value.trim();
       if (!name) {
@@ -46,11 +48,12 @@ const Repo = () => {
         return;
       }
 
-      const response = await axios.post(
-        `${SERVER_URL}/repo/template`,
-        { templateName: name },
-        { withCredentials: true }
-      );
+      const response = await apiClient.post(`${SERVER_URL}/repo/template`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        templateName: name,
+      });
 
       if (response.status === 200) {
         const repoInfo = response.data.Repository as RepositoryInfo;

@@ -1,26 +1,26 @@
 import { Request, Response } from "express";
-import fetchUserId from "../../utils/fetchUserId";
 import generateFolder from "./generateFolder";
 import { prisma } from "../../prismaDb/prismaDb";
 
 const getFiles = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { providerId } = req.user as { providerId: string };
+    const { userId } = req.user as { userId: string };
+    console.log("userId", userId);
     const { name: repoName } = req.body as { name: string };
+
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized: No token provided" });
+      return;
+    }
 
     if (!repoName) {
       res.status(400).send({ message: "Repository name is required" });
       return;
     }
 
-    const { profileId } = (await fetchUserId(providerId, undefined)) as {
-      userId: string;
-      profileId: string;
-    };
-
     const profile = await prisma.profile.findUnique({
       where: {
-        id: profileId,
+        userId: userId,
       },
     });
 
@@ -35,11 +35,11 @@ const getFiles = async (req: Request, res: Response): Promise<void> => {
       res.status(400).send({ message: "Container ID is required" });
       return;
     }
-    const currentWorkingDirectory = `/home/${profileId}`;
+    const currentWorkingDirectory = `/home/${profile.id}`;
 
     const fileStructure = await generateFolder(
       currentWorkingDirectory,
-      profileId,
+      profile.id,
       repoName
     );
 

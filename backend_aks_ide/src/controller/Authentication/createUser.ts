@@ -1,117 +1,120 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-
+import crypto from "crypto";
 import { prisma } from "../../prismaDb/prismaDb";
+import { generateAccessToken, generateRefreshToken } from "../../utils/createTokens";
 
-const JWTSECRET = process.env.JWT_SECRET;
-
-if (!JWTSECRET) {
-  throw new Error("Missing JWT_SECRET");
-}
-
-const createUser = async (req: Request, res: Response): Promise<void> => {
+const createUser = async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, name, avatar } = req.body;
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
+    const user = await prisma.user.findUnique({ where: { email } });
 
-    if (existingUser) {
-      if (
-        existingUser.provider === "GOOGLE" ||
-        existingUser.hashedPassword === null
-      ) {
+    if (user) {
+      if (user.provider === "GOOGLE") {
         res
           .status(400)
-          .send({ message: "Try Login through Google", success: false });
+          .json({ success: false, message: "Try login through Google" });
         return;
       }
 
-      const passwordMatch = await bcrypt.compare(
-        password,
-        existingUser.hashedPassword
-      );
-
-      if (passwordMatch) {
-        const token = jwt.sign(
-          {
-            accessToken: existingUser.accessToken,
-            providerId: existingUser.providerId,
-          },
-          JWTSECRET,
-          { expiresIn: "1d" }
-        );
-
+      if (!user.hashedPassword) {
         res
-          .status(200)
-          .send({
-            message: "User authenticated",
-            success: true,
-            accessToken: token,
-          });
+          .status(400)
+          .json({ success: false, message: "Try login through Google" });
         return;
       }
 
-      res.status(400).send({ message: "Invalid password", success: false });
-      return;
-    }
+      const isPasswordValid = await bcrypt.compare(
+        password,
+        user.hashedPassword
+      );
+      if (!isPasswordValid) {
+        res
+          .status(401)
+          .json({ success: false, message: "Invalid email or password" });
+        return;
+      }
 
-    const emailVerification = await prisma.emailVerification.findFirst({
-      where: { email, verified: true },
-    });
+      const accessToken = generateAccessToken({ email, userId: user.id });
+      const refreshToken = generateRefreshToken({
+        id: crypto
+          .createHash("sha256")
+          .update(`${email}-${Date.now()}-${process.env.REFRESH_TOKEN_SECRET}`)
+          .digest("hex"),
+        newIds: user.id,
+        times: {
+          time1: user.createdAt.toISOString(),
+          time2: user.updatedAt.toISOString(),
+        },
+        randomUUID: crypto.randomUUID(),
+      });
 
-    if (!emailVerification) {
-      res.status(400).send({ message: "User not verified", success: false });
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { refreshToken },
+      });
+
+
+      res.status(200).json({
+        success: true,
+        message: "Logged in successfully",
+        refreshToken,
+        accessToken,
+      });
       return;
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
-    const providerId = await bcrypt.hash(email, 6);
 
-    const newAccessToken = jwt.sign({ email, providerId }, JWTSECRET, {
-      expiresIn: "180d",
-    });
+    const providerId = `EMAIL-${email}`;
 
-    const createUser = await prisma.user.create({
+    const newUser = await prisma.user.create({
       data: {
         email,
         emailVerified: true,
         hashedPassword: hashedPassword,
         provider: "EMAIL",
-        providerId: `EMAIL-${providerId}`,
-        accessToken: newAccessToken,
+        providerId,
         profile: {
           create: {
             email,
+            name: name || "",
+            avatar: avatar || "",
+            provider: "EMAIL",
           },
         },
       },
     });
 
-    if (!createUser) {
-      res
-        .status(400)
-        .send({ message: "Unable to create user", success: false });
-      return;
-    }
-
-    const token = jwt.sign(
-      {
-        accessToken: createUser.accessToken,
-        providerId: createUser.providerId,
+    const accessToken = generateAccessToken({ email, userId: newUser.id });
+    const refreshToken = generateRefreshToken({
+      id: crypto
+        .createHash("sha256")
+        .update(`${email}-${Date.now()}-${process.env.REFRESH_TOKEN_SECRET}`)
+        .digest("hex"),
+      newIds: newUser.id,
+      times: {
+        time1: newUser.createdAt.toISOString(),
+        time2: newUser.updatedAt.toISOString(),
       },
-      JWTSECRET,
-      { expiresIn: "1d" }
-    );
+      randomUUID: crypto.randomUUID(),
+    });
 
-    res
-      .status(200)
-      .send({ message: "User created successfully", success: true, accessToken: token });
+    await prisma.user.update({
+      where: { id: newUser.id },
+      data: { refreshToken },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "User created successfully",
+      refreshToken,
+      accessToken
+    });
   } catch (error) {
-    console.error("Error in creating user:", error);
-    res.status(500).send({ message: "Internal server error" });
+    console.error("Error in createUser:", error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
 

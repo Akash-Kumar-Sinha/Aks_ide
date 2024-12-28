@@ -1,7 +1,5 @@
 import { Request, Response } from "express";
-import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import { prisma } from "../../prismaDb/prismaDb";
 
 dotenv.config();
 
@@ -11,35 +9,35 @@ if (!JWTSECRET) {
   throw new Error("Missing JWT_SECRET");
 }
 
-const googleLogin = async(req: Request, res: Response) => {
-  const { accessToken, providerId } = req.user as {
+const googleLogin = async (req: Request, res: Response) => {
+  const { accessToken, refreshToken, user } = req.user as {
     accessToken: string;
-    providerId: string;
+    refreshToken: string;
+    user: {
+      id: string;
+      email: string;
+      name: string;
+      avatar: string;
+      provider: string;
+      providerId: string;
+      emailVerified: boolean;
+    };
   };
 
-  if (!req.user || !accessToken || !providerId) {
-    return res.redirect("/");
+  if (!req.user || !accessToken) {
+    return res.redirect(`${VITE_CLIENT_URL}`);
   }
 
-  const token = jwt.sign({ accessToken, providerId }, JWTSECRET, {
-    expiresIn: "1d",
-  });
-
-  const user = await prisma.user.findUnique({
-    where: {
-      providerId
-    }
-  })
-
-  if(!user) {
+  if (!user) {
     res.status(404).json({ message: "User not found" });
-    return
+    return;
   }
 
-  res.cookie("accessToken", token, {
+  res.cookie(`${process.env.REFRESH_TOKEN_NAME}`, refreshToken, {
     httpOnly: true,
     secure: true,
   });
+
   res.redirect(`${VITE_CLIENT_URL}`);
 };
 

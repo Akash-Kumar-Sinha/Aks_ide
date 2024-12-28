@@ -5,29 +5,18 @@ const changeName = async (req: Request, res: Response) => {
   try {
     const { name } = req.body;
 
-    const { providerId } = req.user as { providerId: string };
+    const { userId } = req.user as { userId: string };
 
-    if (!providerId || !name) {
+    if (!userId || !name) {
       res.status(401).json({
         message: "Unauthorized: No token provided or name is not provided",
       });
       return;
     }
 
-    const user = await prisma.user.findUnique({
-      where: {
-        providerId,
-      },
-    });
-
-    if (!user) {
-      res.status(404).json({ message: "User not found" });
-      return;
-    }
-
     await prisma.user.update({
       where: {
-        providerId,
+        id: userId,
       },
       data: {
         name,

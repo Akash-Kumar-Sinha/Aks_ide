@@ -1,16 +1,17 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import apiClient from "./apiClient";
+import { getAccessTokenFromLocalStorage } from "./getAccessTokenFromLocalStorage";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
 interface Profile {
-    id: string;
-    name: string;
-    email: string;
-    createdAt: string;
-    avatar: string;
-    userId: string;
-  }
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+  avatar: string;
+  userId: string;
+}
 
 const useUserProfile = () => {
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
@@ -18,9 +19,12 @@ const useUserProfile = () => {
   const [error, setError] = useState<unknown>(null);
 
   const fetchUserProfile = async () => {
+    const accessToken = getAccessTokenFromLocalStorage();
     try {
-      const response = await axios.get(`${SERVER_URL}/auth/user_profile`, {
-        withCredentials: true,
+      const response = await apiClient.get(`${SERVER_URL}/auth/user_profile`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
       });
 
       if (response.status === 200) {

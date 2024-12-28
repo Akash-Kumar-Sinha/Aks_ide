@@ -1,5 +1,4 @@
 import Docker from "dockerode";
-// import executeDockerCommand from "./executeDockerCommand";
 
 const docker = new Docker();
 

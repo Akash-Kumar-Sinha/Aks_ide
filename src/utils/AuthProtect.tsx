@@ -2,6 +2,8 @@ import React, { ReactNode, useState, useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Loading from "@/components/Loading";
+import apiClient from "./apiClient";
+import { getAccessTokenFromLocalStorage } from "./getAccessTokenFromLocalStorage";
 
 interface AuthProtectProps {
   children: ReactNode;
@@ -17,10 +19,18 @@ const AuthProtect: React.FC<AuthProtectProps> = ({ children }) => {
   useEffect(() => {
     setIsLoading(true);
     const verifyToken = async () => {
+      const accessToken = getAccessTokenFromLocalStorage();
       try {
-        const response = await axios.get(`${SERVER_URL}/auth/verify_token`, {
-          withCredentials: true,
-        });
+
+        const response = await apiClient.get(
+          `${SERVER_URL}/auth/verify_token`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+            withCredentials: true,
+          }
+        );
 
         if (response.status === 200 && response.data.authorized) {
           setIsAuthenticated(true);

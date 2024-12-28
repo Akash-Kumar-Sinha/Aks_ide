@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import Docker from "dockerode";
-import fetchUserId from "../../utils/fetchUserId";
 import { prisma } from "../../prismaDb/prismaDb";
 import executeDockerCommand from "../DockerOrchestration/executeDockerCommand";
 import buildFilesTree from "./buildFilesTree";
@@ -8,17 +7,18 @@ import buildFilesTree from "./buildFilesTree";
 const docker = new Docker();
 
 const openRepo = async (req: Request, res: Response) => {
-  const { providerId } = req.user as { providerId: string };
+  const { userId } = req.user as { userId: string };
+
   const pwd = req.query.pwd as string;
 
-  const { profileId } = (await fetchUserId(providerId, undefined)) as {
-    userId: string;
-    profileId: string;
-  };
+  if (!userId) {
+    res.status(401).json({ message: "Unauthorized: No token provided" });
+    return;
+  }
 
   const profile = await prisma.profile.findUnique({
     where: {
-      id: profileId,
+      userId: userId,
     },
   });
 

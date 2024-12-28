@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Editor from "@monaco-editor/react";
 import * as monaco from "monaco-editor";
-import axios from "axios";
 
 import { socket } from "@/utils/Socket";
 import Loading from "../Loading";
+import apiClient from "@/utils/apiClient";
+import { getAccessTokenFromLocalStorage } from "@/utils/getAccessTokenFromLocalStorage";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -47,9 +48,12 @@ const CodeEditor: React.FC<CodeProps> = React.memo(
       console.log("Fetching file content...");
 
       try {
-        const response = await axios.get(`${SERVER_URL}/repo/content`, {
+        const accessToken = getAccessTokenFromLocalStorage();
+        const response = await apiClient.get(`${SERVER_URL}/repo/content`, {
           params: { filePath: selectedFileAbsolutePath },
-          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
         });
         console.log("response", response.data.content);
         if (response.status === 200) {

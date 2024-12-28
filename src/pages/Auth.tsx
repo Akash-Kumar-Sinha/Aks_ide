@@ -43,7 +43,13 @@ const Auth = () => {
           data
         );
         if (response.data.success === true) {
-          document.cookie = `accessToken=${response.data.accessToken}`;
+          document.cookie = `${import.meta.env.VITE_REFRESH_TOKEN_NAME}=${
+            response.data.refreshToken
+          }`;
+          localStorage.setItem(
+            import.meta.env.VITE_ACCESS_TOKEN_NAME,
+            response.data.accessToken
+          );
           navigate("/");
           window.location.reload();
         }
@@ -57,7 +63,10 @@ const Auth = () => {
 
   const sentVerificationLink = async () => {
     const formData = watch();
-    if(formData.email === "") {setMessage("Please Enter you Email!"); return;}
+    if (formData.email === "") {
+      setMessage("Please Enter you Email!");
+      return;
+    }
     setLoading(true);
     try {
       if (status === "AUTH") {
