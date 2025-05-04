@@ -37,18 +37,20 @@ const Auth = () => {
   const onSubmit: SubmitHandler<FieldValues> = async (data) => {
     setLoading(true);
     try {
+      console.log(data);
       if (status === "PASSWORD") {
-        const response = await axios.post(
-          `${SERVER_URL}/auth/create_user`,
-          data
-        );
+        const response = await axios.post(`${SERVER_URL}/auth/create_user`, {
+          email: data.email,
+          password: data.password,
+        });
+        console.log(response.data);
         if (response.data.success === true) {
           document.cookie = `${import.meta.env.VITE_REFRESH_TOKEN_NAME}=${
-            response.data.refreshToken
+            response.data.refresh_token
           }`;
           localStorage.setItem(
             import.meta.env.VITE_ACCESS_TOKEN_NAME,
-            response.data.accessToken
+            response.data.access_token
           );
           navigate("/");
           window.location.reload();
@@ -70,34 +72,33 @@ const Auth = () => {
     setLoading(true);
     try {
       if (status === "AUTH") {
-        const response = await axios.post(
-          `${SERVER_URL}/auth/send_token`,
-          formData
-        );
-        if (response.data.Route === "PASSWORD") {
+        const response = await axios.post(`${SERVER_URL}/auth/send_token`, {
+          email: formData.email,
+        });
+        console.log(response.data);
+        if (response.data.route === "PASSWORD") {
           setStatus("PASSWORD");
           setMessage(null);
           return;
         }
-        if (response.data.Route === "SENT") {
+        if (response.data.route === "SENT") {
           setStatus("SENT");
           setMessage("Verification link sent to your email");
           return;
         }
-        if (response.data.Route === "AUTH") {
+        if (response.data.route === "AUTH") {
           setMessage("Try Login through Google");
           return;
         }
       } else if (status === "SENT") {
-        const response = await axios.post(
-          `${SERVER_URL}/auth/check_email`,
-          formData
-        );
-        if (response.data.Route === "PASSWORD") {
+        const response = await axios.post(`${SERVER_URL}/auth/check_email`, {
+          email: formData.email,
+        });
+        if (response.data.route === "PASSWORD") {
           setStatus("PASSWORD");
           setMessage(null);
         }
-        if (response.data.Route === "SENT") {
+        if (response.data.route === "SENT") {
           setStatus("SENT");
           setMessage("You need to verify your Email");
         }

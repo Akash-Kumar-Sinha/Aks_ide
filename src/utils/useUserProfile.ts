@@ -27,6 +27,8 @@ const useUserProfile = () => {
         },
       });
 
+      console.log("User profile response:", response.data); 
+
       if (response.status === 200) {
         setUserProfile(response.data.user);
       } else {
