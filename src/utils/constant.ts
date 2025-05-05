@@ -1,0 +1,1 @@
+export const WEBSOCKET_URL = import.meta.env.VITE_SOCKET_SERVER_URL;

@@ -21,7 +21,7 @@ const Terminal: React.FC<TerminalProps> = ({ selectedFile, openRepo }) => {
   useEffect(() => {
     if (userProfile && profileId !== userProfile.id) {
       setProfileId(userProfile.id);
-      socket.emit("profile_id", userProfile.id);
+      socket.emit("load_terminal", userProfile.id);
     }
   }, [userProfile, profileId]);
 

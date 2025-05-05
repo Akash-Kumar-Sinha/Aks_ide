@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { socket } from "@/utils/Socket";
+import { socket, ws } from "@/utils/Socket";
 import useUserProfile from "@/utils/useUserProfile";
 import SideBar from "@/components/Repo/Sidebar/SideBar";
 import Explorer from "@/components/Repo/Sidebar/Explorer";
@@ -155,13 +155,16 @@ const Playground = () => {
   );
 
   useEffect(() => {
-    const handleConnect = () => {
-      console.log("Connected with socket ID:", socket.id);
+    // const handleConnect = () => {
+    //   console.log("Connected with socket ID:", socket.id);
+    // };
+    ws.onopen = () => {
+      console.log("Connected with WebSocket");
     };
 
-    socket.on("connect", handleConnect);
+    // socket.on("connect", handleConnect);
     return () => {
-      socket.off("connect", handleConnect);
+      ws.close();
     };
   }, []);
 
