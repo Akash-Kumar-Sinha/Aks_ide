@@ -4,23 +4,27 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-axum ="0.8.3"
-tokio = {version ="1.44.2",  features = ["full"] }
-tungstenite = "0.21"
-tokio-tungstenite = "0.15"
-tokio-websockets = { version = "0.11.4", features = ["server", "openssl"] }
-log = "0.4"
-futures-util = "0.3.28"   
-serde = "1.0.219"
-dotenv = "0.15.0"
+axum = "0.8.3"
+tokio = { version = "1.44.2", features = ["full"] }
+socketioxide = "0.16.0"
 sea-orm = { version = "1.1.10", features = [ "sqlx-postgres", "runtime-tokio-rustls", "macros" ] }
-tokio-stream = "0.1"
-reqwest = { version = "0.11", features = ["json", "cookies", "default-tls"] }
-
+log = "0.4"
 tower-http = {version = "0.6.2", features = ["cors", "trace"]}
-rand = "0.9.1"
 bollard = "0.18.1"
-serde_json = "1.0.104"
-nix = "0.23"
-pty = "0.2.0" 
+serde = "1.0.219"
+futures-util = "0.3.28"
+dotenv = "0.15.0"
+
+# tungstenite = "0.21"
+# tokio-tungstenite = "0.15"
+# tokio-websockets = { version = "0.11.4", features = ["server", "openssl"] }
+
+
+# tokio-stream = "0.1"
+# reqwest = { version = "0.11", features = ["json", "cookies", "default-tls"] }
+
+# rand = "0.9.1"
+# serde_json = "1.0.104"
+# nix = "0.23"
+# pty = "0.2.0" 
 # futures = "0.3"

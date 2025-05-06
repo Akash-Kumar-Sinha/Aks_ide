@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { socket, ws } from "@/utils/Socket";
+import { socket } from "@/utils/Socket";
 import useUserProfile from "@/utils/useUserProfile";
 import SideBar from "@/components/Repo/Sidebar/SideBar";
 import Explorer from "@/components/Repo/Sidebar/Explorer";
@@ -9,6 +9,7 @@ import Terminal from "@/components/Repo/Terminal";
 import { SidebarTabs } from "@/utils/types/types";
 import apiClient from "@/utils/apiClient";
 import { getAccessTokenFromLocalStorage } from "@/utils/getAccessTokenFromLocalStorage";
+import toast from "react-hot-toast";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -154,19 +155,53 @@ const Playground = () => {
     [activeSidebarTab]
   );
 
-  useEffect(() => {
-    // const handleConnect = () => {
-    //   console.log("Connected with socket ID:", socket.id);
-    // };
-    ws.onopen = () => {
-      console.log("Connected with WebSocket");
-    };
+  // useEffect(() => {
+  //   const handleConnect = () => {
+  //     console.log("Connected with socket ID:", socket.id);
+  //     toast.success(`Connected with socket server ${socket.id}`);
+  //     if (userProfile) {
+  //       socket.emit("load_terminal", { email: userProfile.email });
+  //     }
+  //   };
+  //   if (userProfile) {
+  //     socket.on("connect", handleConnect);
+  //   }
+  //   return () => {
+  //     socket.off("connect", handleConnect);
+  //   };
+  // }, [userProfile]);
 
-    // socket.on("connect", handleConnect);
+  useEffect(() => {
+    // Add more detailed connection logging
+    console.log("Socket state:", socket);
+    console.log("Attempting to connect to server...");
+  
+    // Listen for all socket lifecycle events
+    socket.on("connect", () => {
+      console.log("Connected with socket ID:", socket.id);
+      toast.success(`Connected with socket server ${socket.id}`);
+      if (userProfile) {
+        console.log("Emitting load_terminal with profile:", userProfile.email);
+        socket.emit("load_terminal", { email: userProfile.email });
+      }
+    });
+  
+    socket.on("connect_error", (error) => {
+      console.error("Connection error:", error);
+      toast.error(`Socket connection error: ${error.message}`);
+    });
+  
+    socket.on("disconnect", (reason) => {
+      console.log("Disconnected:", reason);
+      toast.error(`Socket disconnected: ${reason}`);
+    });
+  
     return () => {
-      ws.close();
+      socket.off("connect");
+      socket.off("connect_error");
+      socket.off("disconnect");
     };
-  }, []);
+  }, [userProfile]);
 
   useEffect(() => {
     updateFilePath();
@@ -211,7 +246,7 @@ const Playground = () => {
 
   return (
     <div className="w-screen h-full flex border-r border-zinc-900">
-      <div className="relative h-full flex border-t border-zinc-900 w-full">
+      {/* <div className="relative h-full flex border-t border-zinc-900 w-full">
         <SideBar
           toggleFullScreen={toggleFullScreen}
           isFullScreen={isFullScreen}
@@ -245,13 +280,13 @@ const Playground = () => {
               selectedFile={selectedFile}
               selectedFileAbsolutePath={selectedFileAbsolutePath}
             />
-          </div>
+          </div> */}
 
-          <div className="h-56">
-            <Terminal selectedFile={selectedFile} openRepo={openRepo} />
-          </div>
-        </div>
+      <div className="h-56">
+        <Terminal selectedFile={selectedFile} openRepo={openRepo} />
       </div>
+      {/* </div>
+      </div> */}
     </div>
   );
 };

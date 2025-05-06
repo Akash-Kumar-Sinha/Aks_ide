@@ -1,123 +1,88 @@
-use dotenv::dotenv;
-use futures_util::{SinkExt, StreamExt};
+use axum::{
+    http::{
+        header::{AUTHORIZATION, CONTENT_TYPE},
+        HeaderValue, Method,
+    },
+    routing::get,
+};
 use sea_orm::DatabaseConnection;
 use serde::Deserialize;
-use serde_json;
-use tokio_tungstenite::WebSocketStream;
-use std::{env, net::TcpStream, sync::{Arc, RwLock}};
-use tokio::net::TcpListener;
-use tokio_websockets::{Error, ServerBuilder};
-use tungstenite::handshake::server::{Request, Response};
-use tokio::sync::mpsc;
-
+use socket_handler::load_terminal::load_terminal;
+use socketioxide::{
+    extract::{Data, SocketRef},
+    SocketIo,
+};
+use std::{env, sync::Arc};
+use tower_http::cors::CorsLayer;
 
 mod db;
 mod docker_vm;
 mod entities;
-mod events;
 mod socket_handler;
 
-use events::{event_handler, Event};
-
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct AppState {
     pub db: Arc<DatabaseConnection>,
-    pub socket_connections: Arc<RwLock<Vec<WebSocketStream<TcpStream>>>>,
-    pub event_tx: mpsc::Sender<Event>,
-}
-#[derive(Deserialize)]
-struct ClientMessage {
-    event: String,
-    email: Option<String>,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+struct LoadTerminalPayload {
+    email: String,
+}
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    dotenv().ok();
+    let cors = CorsLayer::new()
+        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
+        .allow_origin("http://localhost:5173".parse::<HeaderValue>().unwrap())
+        .allow_headers([AUTHORIZATION, CONTENT_TYPE])
+        .allow_credentials(true);
+
     let port = env::var("PORT").unwrap_or_else(|_| "9000".to_string());
     let db = db::connect_db().await;
 
-    let addr = format!("0.0.0.0:{}", port);
-    let listener = TcpListener::bind(&addr).await?;
+    let app_state = AppState { db: Arc::new(db) };
 
-    let (event_tx, event_rx) = tokio::sync::mpsc::channel::<Event>(100);
-    tokio::spawn(event_handler(event_rx));
+    let (layer, io) = SocketIo::new_layer();
 
-    while let Ok((stream, _)) = listener.accept().await {
-        let callback = |req: &Request, mut response: Response| {
-            if let Some(origin) = req.headers().get("origin") {
-                println!("Origin: {:?}", origin);
-                // You could add validation here if needed
-            }
-            Ok::<_, tungstenite::Error>(response)
-        };
+    let app_state_clone = app_state.clone();
 
-        let (_request, mut ws_stream) = match ServerBuilder::new().accept(stream).await {
-            Ok(res) => res,
-            Err(e) => {
-                eprintln!("WebSocket handshake failed: {:?}", e);
-                continue;
-            }
-        };
-        let app_state = AppState {
-            db: Arc::new(db.clone()),
-            socket_connections: Arc::new(RwLock::new(vec![])),
-            event_tx: event_tx.clone(),    
-        };
+    io.ns("/", move |s: SocketRef| {
+        println!("New connection: {:?}", s.id);
 
-        let state = app_state.clone();
-        let tx = event_tx.clone();
-
-        tokio::spawn(async move {
-            let client_id = rand::random::<u32>();
-            tx.send(Event::ClientConnected(client_id)).await.unwrap();
-
-            if let Err(e) = async {
-                while let Some(Ok(msg)) = ws_stream.next().await {
-                    if msg.is_text() || msg.is_binary() {
-                        let message = msg.as_text().unwrap_or_default().to_string();
-
-                        if let Ok(parsed) = serde_json::from_str::<ClientMessage>(&message) {
-                            match parsed.event.as_str() {
-                                "load_terminal" => {
-                                    if let Some(email) = parsed.email {
-                                        tx.send(Event::LoadTerminal(
-                                            client_id,
-                                            state.clone(),
-                                            email,
-                                        ))
-                                        .await
-                                        .unwrap();
-                                    } else {
-                                        eprintln!("❌ Email missing in 'load_terminal' event");
-                                    }
-                                }
-                                _ => {
-                                    tx.send(Event::MessageReceived(client_id, message))
-                                        .await
-                                        .unwrap();
-                                }
-                            }
-                        } else {
-                            // fallback: just echo message
-                            tx.send(Event::MessageReceived(client_id, message.clone()))
-                                .await
-                                .unwrap();
-                        }
-
-                        ws_stream.send(msg).await?;
-                    }
-                }
-                Ok::<_, Error>(())
-            }
-            .await
-            {
-                eprintln!("Connection error: {:?}", e);
-            }
-
-            tx.send(Event::ClientDisconnected(client_id)).await.unwrap();
+        s.on("message", |s: SocketRef| {
+            s.emit("message-back", "Hello World!").ok();
         });
-    }
+
+        let app_state_inner = app_state_clone.clone();
+        s.on("load_terminal", {
+            println!("New load terminal: {:?}", s.id);
+
+            let app_state = app_state_inner.clone();
+            move |s: SocketRef, Data::<LoadTerminalPayload>(payload): Data<LoadTerminalPayload>| {
+                let app_state = app_state.clone();
+                // load_terminal(s.id, app_state, payload.email);
+
+                Box::pin(async move {
+                    println!("📥 Received load_terminal for: {}", payload.email);
+                    load_terminal(s.id, app_state, payload.email).await;
+                    s.emit("loaded_terminal", "Terminal Loaded!").ok();
+                })
+            }
+        });
+    });
+
+    let app = axum::Router::new()
+        .route("/", get(|| async { "Hello, World!" }))
+        .with_state(app_state)
+        .layer(layer)
+        .layer(cors);
+    let addr = format!("0.0.0.0:{}", port);
+    let listener = tokio::net::TcpListener::bind(&addr)
+        .await
+        .expect("Failed to bind to address");
+
+    println!("🚀 Server running at http://{}", addr);
+    axum::serve(listener, app).await.unwrap();
 
     Ok(())
 }

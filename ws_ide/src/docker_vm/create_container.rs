@@ -3,13 +3,14 @@ use bollard::image::CreateImageOptions;
 use bollard::Docker;
 use futures_util::stream::TryStreamExt;
 use sea_orm::{EntityTrait, Set, ColumnTrait, QueryFilter, ActiveModelTrait};
+use socketioxide::socket::Sid;
 
 use crate::entities::profile;
 use crate::AppState;
 
 const IMAGE: &str = "ubuntu:20.04";
 
-pub async fn create_container(id: u32, state: AppState, email: String) -> Option<String> {
+pub async fn create_container(id: Sid, state: AppState, email: String) -> Option<String> {
     let docker = match Docker::connect_with_socket_defaults() {
         Ok(client) => client,
         Err(e) => {
@@ -17,8 +18,8 @@ pub async fn create_container(id: u32, state: AppState, email: String) -> Option
             return None;
         }
     };
-
-    let _ = docker
+    println!("🔧 Creating container for user");
+    let image_pulling = docker
         .create_image(
             Some(CreateImageOptions {
                 from_image: IMAGE,
@@ -31,6 +32,7 @@ pub async fn create_container(id: u32, state: AppState, email: String) -> Option
         .await
         .expect("❌ Failed to pull image");
 
+        println!("✅ Image `{}` pulled successfully", IMAGE);
     let container_config = Config {
         image: Some(IMAGE),
         tty: Some(true),

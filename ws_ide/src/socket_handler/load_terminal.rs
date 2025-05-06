@@ -1,12 +1,11 @@
 use bollard::container::StartContainerOptions;
 use bollard::Docker;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use socketioxide::socket::Sid;
 
-use crate::{
-    docker_vm::create_container::{self, create_container}, entities::profile, socket_handler::start_pty_process::{self, start_pty_process}, AppState
-};
+use crate::{docker_vm::create_container::create_container, entities::profile, AppState};
 
-pub async fn load_terminal(id: u32, state: AppState, email: String) {
+pub async fn load_terminal(id: Sid, state: AppState, email: String) {
     println!("🔧 Loading terminal for user: {}", email);
 
     let docker_container_id: Option<String>;
@@ -39,7 +38,11 @@ pub async fn load_terminal(id: u32, state: AppState, email: String) {
                         }
                     }
                     if docker_container_id.is_some() {
-                        start_pty_process(docker_container_id, state).await;
+                        println!(
+                            "🚀
+                            Container `{}` started successfully",
+                            docker_container_id.as_ref().unwrap()
+                        )
                     }
                 }
                 None => {
