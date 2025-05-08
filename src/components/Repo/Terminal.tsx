@@ -7,6 +7,7 @@ import { socket } from "@/utils/Socket";
 import useUserProfile from "@/utils/useUserProfile";
 import Loading from "../Loading";
 import { Button } from "../ui/button";
+import toast from "react-hot-toast";
 
 interface TerminalProps {
   selectedFile: string;
@@ -24,6 +25,13 @@ const Terminal: React.FC<TerminalProps> = ({ selectedFile, openRepo }) => {
       socket.emit("load_terminal", userProfile.id);
     }
   }, [userProfile, profileId]);
+
+  useEffect(()=>{
+    socket.on("terminal_success", (data: string) => {
+      toast.success(data)
+      console.log("terminal_success", data) 
+    })
+  },[])
 
   useEffect(() => {
     if (!userProfile) return;

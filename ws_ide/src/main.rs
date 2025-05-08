@@ -23,11 +23,17 @@ mod socket_handler;
 #[derive(Clone)]
 pub struct AppState {
     pub db: Arc<DatabaseConnection>,
+    pub socket_io: Arc<SocketIo>, 
 }
 
 #[derive(Debug, Clone, Deserialize)]
 struct LoadTerminalPayload {
     email: String,
+}
+
+struct WriteTerminalPayload {
+    base: LoadTerminalPayload,
+    terminal_input: String,
 }
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -40,10 +46,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let port = env::var("PORT").unwrap_or_else(|_| "9000".to_string());
     let db = db::connect_db().await;
 
-    let app_state = AppState { db: Arc::new(db) };
-
     let (layer, io) = SocketIo::new_layer();
 
+    let app_state = AppState {
+        db: Arc::new(db),
+        socket_io: Arc::new(io.clone()), // Store the SocketIo instance
+    };
+
+    // Clone for the namespace handler
     let app_state_clone = app_state.clone();
 
     io.ns("/", move |s: SocketRef| {
@@ -60,8 +70,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let app_state = app_state_inner.clone();
             move |s: SocketRef, Data::<LoadTerminalPayload>(payload): Data<LoadTerminalPayload>| {
                 let app_state = app_state.clone();
-                // load_terminal(s.id, app_state, payload.email);
-
                 Box::pin(async move {
                     println!("📥 Received load_terminal for: {}", payload.email);
                     load_terminal(s.id, app_state, payload.email).await;
@@ -69,6 +77,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 })
             }
         });
+
     });
 
     let app = axum::Router::new()

@@ -19,7 +19,7 @@ pub async fn create_container(id: Sid, state: AppState, email: String) -> Option
         }
     };
     println!("🔧 Creating container for user");
-    let image_pulling = docker
+    let _image_pulling = docker
         .create_image(
             Some(CreateImageOptions {
                 from_image: IMAGE,
