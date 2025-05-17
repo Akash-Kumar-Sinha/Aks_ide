@@ -3,7 +3,10 @@ use bollard::Docker;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use socketioxide::socket::Sid;
 
-use crate::{docker_vm::create_container::create_container, entities::profile, socket_handler::pseudo_terminal::pseudo_terminal, AppState};
+use crate::{
+    docker_vm::create_container::create_container, entities::profile,
+    socket_handler::pseudo_terminal::pseudo_terminal, AppState,
+};
 
 pub async fn load_terminal(id: Sid, state: AppState, email: String) {
     println!("🔧 Loading terminal for user: {}", email);
@@ -48,6 +51,15 @@ pub async fn load_terminal(id: Sid, state: AppState, email: String) {
                 }
                 None => {
                     eprintln!("⚠️ User `{}` has no container ID assigned", email);
+                    docker_container_id = create_container(id, state.clone(), email).await;
+                    if docker_container_id.is_some() {
+                        println!(
+                            "🚀
+                            Container `{}` started successfully",
+                            docker_container_id.as_ref().unwrap()
+                        );
+                        pseudo_terminal(docker_container_id.clone(), state.clone()).await;
+                    }
                 }
             }
         }

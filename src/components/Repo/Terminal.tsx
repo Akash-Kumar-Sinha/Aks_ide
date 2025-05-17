@@ -58,6 +58,7 @@ const Terminal: React.FC<TerminalProps> = ({ selectedFile, openRepo }) => {
     });
 
     const handleTerminalData = (data: string) => {
+      console.log("Received terminal data:", data);      
       terminal.write(data);
     };
 

@@ -12,7 +12,11 @@ use socketioxide::{
     extract::{Data, SocketRef},
     SocketIo,
 };
-use std::{env, sync::Arc};
+use std::env;
+use std::fs::File;
+use std::sync::{Arc, Mutex};
+use tokio::sync::mpsc::Sender;
+
 use tower_http::cors::CorsLayer;
 
 mod db;
@@ -23,18 +27,16 @@ mod socket_handler;
 #[derive(Clone)]
 pub struct AppState {
     pub db: Arc<DatabaseConnection>,
-    pub socket_io: Arc<SocketIo>, 
+    pub socket_io: Arc<SocketIo>,
+
 }
+
 
 #[derive(Debug, Clone, Deserialize)]
 struct LoadTerminalPayload {
     email: String,
 }
 
-struct WriteTerminalPayload {
-    base: LoadTerminalPayload,
-    terminal_input: String,
-}
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cors = CorsLayer::new()
@@ -77,7 +79,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 })
             }
         });
-
     });
 
     let app = axum::Router::new()
