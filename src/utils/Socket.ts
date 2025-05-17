@@ -1,10 +1,31 @@
-import { io } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 
-const SOCKET_SERVER_URL = import.meta.env.VITE_SOCKET_SERVER_URL;
+// Configure socket.io client
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:9000";
 
-if (!SOCKET_SERVER_URL) {
-  throw new Error("SOCKET_SERVER_URL is not defined");
-}
-console.log("SOCKET_SERVER_URL", SOCKET_SERVER_URL);
+// Create and export the socket instance
+export const socket: Socket = io(SOCKET_URL, {
+  autoConnect: false, // Don't connect automatically, we'll do this on component mount
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000,
+  timeout: 20000,
+  transports: ["websocket", "polling"],
+  withCredentials: true,
+});
 
-export const socket = io(`${SOCKET_SERVER_URL}`);
+// Debug socket events
+socket.on("connect", () => {
+  console.log("Socket connected:", socket.id);
+});
+
+socket.on("connect_error", (error) => {
+  console.error("Socket connection error:", error);
+});
+
+socket.on("disconnect", (reason) => {
+  console.log("Socket disconnected:", reason);
+});
+
+export default socket;
