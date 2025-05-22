@@ -6,11 +6,13 @@ The **Terminal Module** is a core component of **Aks IDE** – a cloud-based, re
 
 ![Terminal Image](image.png)
 
-🎥 **Current Working Demo – `rust_server` Branch**
-<video controls src="aks_ide.mp4" title="Aks IDE – Rust Server Demo"></video>
+- **Watch Aks IDE in Action – Rust Server Branch**  
+[Click to watch the demo video](https://drive.google.com/file/d/1lsRfhyKzmDOu24aeY3xtF6QpcKJjdgNM/view?usp=sharing)
 
-🎥 **Legacy Version – `main` Branch**
-<video controls src="aks_ide_old.mp4" title="Aks IDE – Legacy Demo"></video>
+
+- **Legacy Version**  
+This is the previous working version of the terminal module from the `main` branch.  
+[Click to watch the legacy demo](https://drive.google.com/file/d/11ykA2aA7gbdgfaeedPh0G2Spd1P8DdyW/view?usp=sharing)
 
 ---
 
