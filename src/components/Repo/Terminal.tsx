@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { RefreshCw, KeyRound, SquareChevronRight } from "lucide-react";
 import { Terminal as XTerminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
@@ -11,87 +11,16 @@ interface TerminalProps {
   containerClassName?: string;
 }
 
-// Define control character constants for better readability
-const CONTROL_CHARS = {
-  ENTER: 13,        // Carriage Return (CR)
-  BACKSPACE: 8,     // Backspace (BS)
-  DELETE: 127,      // Delete (DEL)
-  TAB: 9,          // Horizontal Tab
-  ESC: 27,         // Escape
-  SPACE: 32,       // Space (start of printable characters)
-  CTRL_C: 3,       // Ctrl+C (SIGINT)
-  CTRL_D: 4,       // Ctrl+D (EOF/SIGTERM)
-  CTRL_L: 12,      // Ctrl+L (clear screen)
-  CTRL_Z: 26,      // Ctrl+Z (SIGTSTP - suspend process)
-  LINE_FEED: 10,   // Line Feed (LF)
-  VERTICAL_TAB: 11, // Vertical Tab
-} as const;
-
 const Terminal: React.FC<TerminalProps> = ({ containerClassName = "" }) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const terminalInstance = useRef<XTerminal | null>(null);
   const fitAddon = useRef<FitAddon | null>(null);
-  const currentCommand = useRef<string>("");
-  const commandHistory = useRef<string[]>([]);
-  const historyPosition = useRef<number>(0);
-  const cursorPosition = useRef<number>(0);
 
   const { userProfile: user, loading } = useUserProfile();
   const [connected, setConnected] = useState(false);
   const [terminalActive, setTerminalActive] = useState(false);
   const [terminalLoaded, setTerminalLoaded] = useState(false);
 
-  // Basic command completion suggestions
-  const commonCommands = [
-    'ls', 'cd', 'pwd', 'mkdir', 'rmdir', 'rm', 'cp', 'mv', 'cat', 'grep',
-    'find', 'chmod', 'chown', 'ps', 'kill', 'top', 'htop', 'df', 'du',
-    'wget', 'curl', 'git', 'npm', 'node', 'python', 'pip', 'docker',
-    'clear', 'history', 'echo', 'nano', 'vim', 'emacs'
-  ];
-
-  // Tab completion function
-  const handleTabCompletion = () => {
-    const terminal = terminalInstance.current;
-    if (!terminal) return;
-
-    const currentCmd = currentCommand.current.trim();
-    if (!currentCmd) return;
-
-    // Simple completion for commands
-    const words = currentCmd.split(' ');
-    const lastWord = words[words.length - 1];
-    
-    if (words.length === 1) {
-      // Complete command names
-      const matches = commonCommands.filter(cmd => 
-        cmd.startsWith(lastWord.toLowerCase())
-      );
-      
-      if (matches.length === 1) {
-        // Single match - complete it
-        const completion = matches[0].substring(lastWord.length);
-        currentCommand.current += completion + ' ';
-        terminal.write(completion + ' ');
-        cursorPosition.current = currentCommand.current.length;
-      } else if (matches.length > 1) {
-        // Multiple matches - show them
-        terminal.write('\r\n');
-        const maxLength = Math.max(...matches.map(m => m.length));
-        const columns = Math.floor(80 / (maxLength + 2));
-        
-        for (let i = 0; i < matches.length; i += columns) {
-          const row = matches.slice(i, i + columns);
-          const formattedRow = row.map(cmd => cmd.padEnd(maxLength + 2)).join('');
-          terminal.write(formattedRow + '\r\n');
-        }
-        
-        // Redraw current command
-        terminal.write('\r\n' + currentCommand.current);
-      }
-    }
-  };
-
-  // Socket connection management
   useEffect(() => {
     const handleConnect = () => {
       setConnected(true);
@@ -121,7 +50,20 @@ const Terminal: React.FC<TerminalProps> = ({ containerClassName = "" }) => {
     };
   }, [user, terminalLoaded]);
 
-  // Terminal event handlers
+  const handleResizeTerminal = useCallback(() => {
+    if (fitAddon.current && terminalInstance.current) {
+      setTimeout(() => {
+        try {
+          fitAddon.current?.fit();
+          const { rows, cols } = terminalInstance.current!;
+          socket.emit("terminal_resize", { rows, cols, email: user?.email });
+        } catch (err) {
+          console.error("Error resizing terminal:", err);
+        }
+      }, 100);
+    }
+  }, [user]);
+
   useEffect(() => {
     const handleTerminalSuccess = () => setTerminalActive(true);
     const handleTerminalError = (errorMsg: string) => {
@@ -137,47 +79,17 @@ const Terminal: React.FC<TerminalProps> = ({ containerClassName = "" }) => {
       setTerminalLoaded(false);
     };
 
-    // Handle process interruption/termination responses
-    const handleProcessInterrupted = () => {
-      if (terminalInstance.current) {
-        // Clear current command after successful interrupt
-        currentCommand.current = "";
-        historyPosition.current = 0;
-        cursorPosition.current = 0;
-        terminalInstance.current.write('\r\n');
-      }
-    };
-
-    const handleProcessSuspended = () => {
-      if (terminalInstance.current) {
-        terminalInstance.current.write('\r\n[Process suspended]\r\n');
-      }
-    };
-
-    const handleSignalError = (error: string) => {
-      if (terminalInstance.current) {
-        terminalInstance.current.write(`\r\n\x1b[33mSignal error: ${error}\x1b[0m\r\n`);
-      }
-    };
-
     socket.on("terminal_success", handleTerminalSuccess);
     socket.on("terminal_error", handleTerminalError);
     socket.on("terminal_closed", handleTerminalClosed);
-    socket.on("process_interrupted", handleProcessInterrupted);
-    socket.on("process_suspended", handleProcessSuspended);
-    socket.on("signal_error", handleSignalError);
 
     return () => {
       socket.off("terminal_success", handleTerminalSuccess);
       socket.off("terminal_error", handleTerminalError);
       socket.off("terminal_closed", handleTerminalClosed);
-      socket.off("process_interrupted", handleProcessInterrupted);
-      socket.off("process_suspended", handleProcessSuspended);
-      socket.off("signal_error", handleSignalError);
     };
   }, []);
 
-  // Terminal initialization
   useEffect(() => {
     if (
       !user ||
@@ -218,6 +130,8 @@ const Terminal: React.FC<TerminalProps> = ({ containerClassName = "" }) => {
       allowTransparency: false,
       lineHeight: 1.3,
       smoothScrollDuration: 200,
+      convertEol: false,
+      disableStdin: false,
     });
 
     const fit = new FitAddon();
@@ -228,205 +142,54 @@ const Terminal: React.FC<TerminalProps> = ({ containerClassName = "" }) => {
     terminal.focus();
     terminalInstance.current = terminal;
 
-    // Reset command state
-    currentCommand.current = "";
-    commandHistory.current = [];
-    historyPosition.current = 0;
-    cursorPosition.current = 0;
+    handleResizeTerminal();
+    window.addEventListener("resize", handleResizeTerminal);
 
-    // Fit terminal and handle resize
-    const handleResize = () => {
-      if (fitAddon.current && terminalInstance.current) {
-        setTimeout(() => {
-          try {
-            fitAddon.current?.fit();
-            const { rows, cols } = terminalInstance.current!;
-            socket.emit("terminal_resize", { rows, cols, email: user?.email });
-          } catch (err) {
-            console.error("Error resizing terminal:", err);
-          }
-        }, 100);
-      }
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-
-    // Handle terminal input with proper command building
     terminal.onData((data) => {
       if (!socket.connected || !terminalActive) return;
 
-      // Handle different types of input
-      for (let i = 0; i < data.length; i++) {
-        const char = data[i];
-        const charCode = char.charCodeAt(0);
-
-        switch (charCode) {
-          case CONTROL_CHARS.ENTER:
-          case CONTROL_CHARS.LINE_FEED:
-            // Handle Enter/Return
-            terminal.write('\r\n');
-            if (currentCommand.current.trim()) {
-              // Add to history if it's different from the last command
-              const lastCommand = commandHistory.current[commandHistory.current.length - 1];
-              if (lastCommand !== currentCommand.current) {
-                commandHistory.current.push(currentCommand.current);
-                // Limit history to 1000 commands
-                if (commandHistory.current.length > 1000) {
-                  commandHistory.current = commandHistory.current.slice(-1000);
-                }
-              }
-              // Send command to server
-              socket.emit("terminal_write", {
-                command: currentCommand.current,
-                email: user?.email,
-              });
-            }
-            currentCommand.current = "";
-            historyPosition.current = 0;
-            cursorPosition.current = 0;
-            break;
-
-          case CONTROL_CHARS.BACKSPACE:
-          case CONTROL_CHARS.DELETE:
-            // Handle Backspace/Delete
-            if (currentCommand.current.length > 0) {
-              currentCommand.current = currentCommand.current.slice(0, -1);
-              cursorPosition.current = Math.max(0, cursorPosition.current - 1);
-              terminal.write('\b \b');
-            }
-            break;
-
-          case CONTROL_CHARS.TAB:
-            // Handle Tab completion
-            handleTabCompletion();
-            break;
-
-          case CONTROL_CHARS.CTRL_C:
-            // Handle Ctrl+C - Send SIGINT to interrupt running processes
-            terminal.write('^C');
-            // Don't clear the command immediately, let the server handle the interrupt
-            // The server should send the interrupt signal to the running process
-            socket.emit("terminal_interrupt", { 
-              email: user?.email,
-              signal: 'SIGINT'
-            });
-            break;
-
-          case CONTROL_CHARS.CTRL_D:
-            // Handle Ctrl+D (EOF) - Send SIGTERM for graceful termination
-            if (currentCommand.current.length === 0) {
-              socket.emit("terminal_signal", { 
-                email: user?.email,
-                signal: 'SIGTERM'
-              });
-            } else {
-              // If there's text, just delete the character under cursor
-              terminal.write('\x04');
-            }
-            break;
-
-          case CONTROL_CHARS.CTRL_L:
-            // Handle Ctrl+L (clear screen)
-            terminal.clear();
-            break;
-
-          case CONTROL_CHARS.CTRL_Z:
-            // Handle Ctrl+Z - Send SIGTSTP to suspend process
-            terminal.write('^Z');
-            socket.emit("terminal_signal", { 
-              email: user?.email,
-              signal: 'SIGTSTP'
-            });
-            break;
-
-          case CONTROL_CHARS.ESC:
-            // Handle ESC sequence (arrow keys, etc.)
-            if (i + 2 < data.length && data[i + 1] === '[') {
-              const escapeCode = data[i + 2];
-              switch (escapeCode) {
-                case 'A': // Up arrow
-                  if (commandHistory.current.length > 0 && historyPosition.current < commandHistory.current.length) {
-                    historyPosition.current++;
-                    const historyCommand = commandHistory.current[commandHistory.current.length - historyPosition.current];
-                    // Clear current line and write history command
-                    terminal.write('\x1b[2K\r' + historyCommand);
-                    currentCommand.current = historyCommand;
-                    cursorPosition.current = historyCommand.length;
-                  }
-                  break;
-                  
-                case 'B': // Down arrow
-                  if (historyPosition.current > 0) {
-                    historyPosition.current--;
-                    const nextCommand = historyPosition.current === 0 
-                      ? "" 
-                      : commandHistory.current[commandHistory.current.length - historyPosition.current];
-                    // Clear current line and write next command
-                    terminal.write('\x1b[2K\r' + nextCommand);
-                    currentCommand.current = nextCommand;
-                    cursorPosition.current = nextCommand.length;
-                  }
-                  break;
-                  
-                case 'C': // Right arrow
-                case 'D': // Left arrow
-                  // For now, just pass through arrow keys
-                  // Future enhancement: implement cursor movement within command
-                  terminal.write(char);
-                  if (i + 1 < data.length) terminal.write(data[i + 1]);
-                  if (i + 2 < data.length) terminal.write(data[i + 2]);
-                  break;
-                  
-                default:
-                  // Other escape sequences, pass them through
-                  terminal.write(char);
-                  if (i + 1 < data.length) terminal.write(data[i + 1]);
-                  if (i + 2 < data.length) terminal.write(data[i + 2]);
-                  break;
-              }
-              i += 2; // Skip the next two characters
-            } else {
-              terminal.write(char);
-            }
-            break;
-
-          default:
-            // Handle regular printable characters and other control characters
-            if (charCode >= CONTROL_CHARS.SPACE || charCode === CONTROL_CHARS.TAB) {
-              // Printable characters and tab
-              currentCommand.current += char;
-              cursorPosition.current++;
-              terminal.write(char);
-            } else if (charCode === CONTROL_CHARS.VERTICAL_TAB) {
-              // Handle vertical tab
-              terminal.write(char);
-            } else {
-              // Other control characters, pass them through but don't add to command
-              terminal.write(char);
-            }
-            break;
-        }
-      }
+      socket.emit("terminal_input", {
+        data: data,
+        email: user?.email,
+      });
     });
 
-    // Handle terminal data from server
-    const handleTerminalData = (data: string) => {
-      if (terminalInstance.current && typeof data === "string") {
+    const handleTerminalData = (data: string | Uint8Array) => {
+      if (terminalInstance.current) {
+        if (typeof data === "string") {
+          terminalInstance.current.write(data);
+        } else {
+          terminalInstance.current.write(new Uint8Array(data));
+        }
+      }
+    };
+
+    const handleTerminalOutput = (data: string) => {
+      if (terminalInstance.current) {
         terminalInstance.current.write(data);
       }
     };
 
+    const handleClearTerminal = () => {
+      if (terminalInstance.current) {
+        terminalInstance.current.clear();
+      }
+    };
+
     socket.on("terminal_data", handleTerminalData);
+    socket.on("terminal_output", handleTerminalOutput);
+    socket.on("clear_terminal", handleClearTerminal);
 
     return () => {
       socket.off("terminal_data", handleTerminalData);
-      window.removeEventListener("resize", handleResize);
+      socket.off("terminal_output", handleTerminalOutput);
+      socket.off("clear_terminal", handleClearTerminal);
+      window.removeEventListener("resize", handleResizeTerminal);
       terminal.dispose();
       terminalInstance.current = null;
       fitAddon.current = null;
     };
-  }, [user, terminalActive]);
+  }, [user, terminalActive, handleResizeTerminal]);
 
   const reloadTerminal = () => {
     if (!user || !socket.connected) return;
@@ -438,8 +201,22 @@ const Terminal: React.FC<TerminalProps> = ({ containerClassName = "" }) => {
 
     setTerminalActive(false);
     setTerminalLoaded(false);
-    socket.emit("load_terminal", { email: user.email });
-    setTerminalLoaded(true);
+    socket.emit("close_terminal", { email: user.email });
+
+    setTimeout(() => {
+      socket.emit("load_terminal", { email: user.email });
+      setTerminalLoaded(true);
+    }, 500);
+  };
+
+  const clearTerminal = () => {
+    if (terminalInstance.current) {
+      terminalInstance.current.clear();
+      socket.emit("terminal_input", {
+        data: "clear\r",
+        email: user?.email,
+      });
+    }
   };
 
   if (loading) {
@@ -496,8 +273,9 @@ const Terminal: React.FC<TerminalProps> = ({ containerClassName = "" }) => {
         {!terminalActive && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-950/50 backdrop-blur-sm">
             <div className="flex items-center space-x-3 text-gray-400">
-              <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
-              <span>Initializing terminal...</span>
+              {/* <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+              <span>Initializing terminal...</span> */}
+              <Loading loadingMessage="Initializing terminal..." />
             </div>
           </div>
         )}
@@ -512,14 +290,32 @@ const Terminal: React.FC<TerminalProps> = ({ containerClassName = "" }) => {
         </div>
 
         <div className="flex items-center space-x-4">
-          <button
-            onClick={reloadTerminal}
-            disabled={!connected}
-            className="p-2 text-gray-400 hover:text-purple-600 hover:bg-gray-800/50 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Reload Terminal"
-          >
-            <RefreshCw size={16} />
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={clearTerminal}
+              disabled={!terminalActive}
+              className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-gray-800/50 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-xs"
+              title="Clear Terminal"
+            >
+              Clear
+            </button>
+            <button
+              onClick={reloadTerminal}
+              disabled={!connected}
+              className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-gray-800/50 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Reload Terminal"
+            >
+              <RefreshCw size={14} />
+            </button>
+            <button
+              onClick={handleResizeTerminal}
+              disabled={!terminalActive}
+              className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-gray-800/50 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Resize Terminal"
+            >
+              Resize
+            </button>
+          </div>
           <div className="flex items-center space-x-2">
             <div
               className={`w-2 h-2 rounded-full ${
@@ -533,6 +329,7 @@ const Terminal: React.FC<TerminalProps> = ({ containerClassName = "" }) => {
             </span>
           </div>
           <div className="w-px h-4 bg-gray-700"></div>
+
           <div className="flex items-center space-x-2">
             <div
               className={`w-2 h-2 rounded-full ${

@@ -1,15 +1,13 @@
 import { useState, useEffect } from "react";
 
-// Simple Loading component with customizable size and color
 type LoadingProps = {
   size?: number;
   color?: string;
+  loadingMessage?: string;
 };
 
-const Loading = ({ size = 40, color = "#9333ea" }: LoadingProps) => {
+const Loading = ({ size = 40, color = "#9333ea", loadingMessage="Loading" }: LoadingProps) => {
   const [dots, setDots] = useState("");
-  
-  // Animation effect for the dots
   useEffect(() => {
     const interval = setInterval(() => {
       setDots((prev) => {
@@ -41,7 +39,7 @@ const Loading = ({ size = 40, color = "#9333ea" }: LoadingProps) => {
         />
       </svg>
       <span className="mt-2 text-purple-500 font-mono">
-        Loading{dots}
+        {loadingMessage}{dots}
       </span>
     </div>
   );

@@ -9,7 +9,6 @@ use crate::{
 };
 
 pub async fn load_terminal(id: Sid, state: AppState, email: String) {
-
     state
         .socket_io
         .to(id)
@@ -69,7 +68,6 @@ pub async fn load_terminal(id: Sid, state: AppState, email: String) {
                         }
                     }
                     if docker_container_id.is_some() {
-
                         state
                             .socket_io
                             .to(id)
@@ -83,7 +81,6 @@ pub async fn load_terminal(id: Sid, state: AppState, email: String) {
                             .await
                             .ok();
 
-                        // Start the pseudo-terminal with the container ID
                         match pseudo_terminal(
                             docker_container_id.clone(),
                             state.clone(),
@@ -91,9 +88,7 @@ pub async fn load_terminal(id: Sid, state: AppState, email: String) {
                         )
                         .await
                         {
-                            Ok(_) => {
-                                // Success is handled by pseudo_terminal function (it emits terminal_success)
-                            }
+                            Ok(_) => {}
                             Err(e) => {
                                 state
                                     .socket_io
@@ -119,7 +114,6 @@ pub async fn load_terminal(id: Sid, state: AppState, email: String) {
 
                     docker_container_id = create_container(id, state.clone(), email.clone()).await;
                     if docker_container_id.is_some() {
-                        
                         state
                             .socket_io
                             .to(id)
@@ -133,7 +127,6 @@ pub async fn load_terminal(id: Sid, state: AppState, email: String) {
                             .await
                             .ok();
 
-                        // Start the pseudo-terminal with the container ID
                         match pseudo_terminal(
                             docker_container_id.clone(),
                             state.clone(),
@@ -141,9 +134,7 @@ pub async fn load_terminal(id: Sid, state: AppState, email: String) {
                         )
                         .await
                         {
-                            Ok(_) => {
-                                // Success is handled by pseudo_terminal function
-                            }
+                            Ok(_) => {}
                             Err(e) => {
                                 state
                                     .socket_io
