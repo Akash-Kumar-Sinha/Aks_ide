@@ -1,88 +1,125 @@
-// socket_handler/terminal_events.rs
-use socketioxide::extract::{Data, SocketRef};
-use serde::Deserialize;
-use crate::AppState;
-use crate::socket_handler::pseudo_terminal::{write_to_terminal, close_terminal};
+use crate::{AppState, LoadTerminalPayload};
+use std::io::Write;
 
-// Define our data structures for various terminal events
-#[derive(Debug, Clone, Deserialize)]
-pub struct TerminalWritePayload {
-    pub data: String,
-    pub email: Option<String>,  // Optional user identifier
-}
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct TerminalResizePayload {
-    pub rows: u16,
-    pub cols: u16,
-    pub email: Option<String>,
-}
-
-// Handler for terminal-related socket events
-pub fn register_terminal_handlers(s: SocketRef, state: AppState) {
-    // Register event handlers for different terminal events
-    handle_terminal_write(s.clone(), state.clone());
-    handle_terminal_resize(s.clone(), state.clone());
-    handle_terminal_close(s.clone(), state.clone());
+pub async fn handle_terminal_write(
+    state: AppState,
+    data: LoadTerminalPayload,
+) -> Result<(), std::io::Error> {
+    let socket_id = state
+        .email_mapping
+        .lock()
+        .unwrap()
+        .get(&data.email)
+        .cloned();
     
-    println!("✅ Terminal event handlers registered for socket: {}", s.id);
-}
-
-// Handle terminal write events (when user types in the terminal)
-fn handle_terminal_write(s: SocketRef, state: AppState) {
-    s.on(
-        "terminal_write",
-        move |s: SocketRef, Data::<TerminalWritePayload>(payload): Data<TerminalWritePayload>| {
-            let state_clone = state.clone();
-            println!("Received terminal_write event from socket {}", s.id);
+    
+    if socket_id.is_none() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "Socket ID not found in mapping",
+        ));
+    }
+    
+    let email = data.email.clone();
+    
+    if let Some(command) = data.command {
+        
+        let mut terminal_file_opt = None;
+        
+        {
+            let terminal_mapping = state.terminal_mapping.lock().unwrap();
+            if let Some(Some(file)) = terminal_mapping.get(&email) {
+                terminal_file_opt = Some(file.try_clone()?);
+            }
+        }
+        
+        if let Some(mut terminal_file) = terminal_file_opt {
+           
+            let mut write_command = command.clone();
+            if !write_command.ends_with('\n') {
+                write_command.push('\n');
+            }
             
-            // Write the data to the terminal
-            match write_to_terminal(&state_clone, &payload.data) {
+            match terminal_file.write_all(write_command.as_bytes()) {
                 Ok(_) => {
-                    // Successfully wrote to terminal - no need to acknowledge in most cases
-                    // But we could if needed: s.emit("terminal_write_ack", "ok").ok();
-                },
+                    
+                    if let Err(e) = terminal_file.flush() {
+                        
+                        if let Some(socket_id) = socket_id {
+                            state
+                                .socket_io
+                                .to(socket_id)
+                                .emit("terminal_error", &format!("Error flushing terminal: {}", e))
+                                .await
+                                .ok();
+                        }
+                    } else {
+                        if let Some(socket_id) = socket_id {
+                            let success_payload = serde_json::json!({
+                                "status": "success",
+                                "command": command,
+                                "message": "Command successfully sent to terminal"
+                            });
+                            
+                            state
+                                .socket_io
+                                .to(socket_id)
+                                .emit("terminal_data", &success_payload)
+                                .await
+                                .ok();
+                                
+                            println!(" Emitted terminal_data event to client");
+                        }
+                    }
+                }
                 Err(e) => {
-                    println!("Error writing to terminal: {}", e);
-                    s.emit("terminal_error", &format!("Write error: {}", e)).ok();
+                    
+                    if let Some(socket_id) = socket_id {
+                        state
+                            .socket_io
+                            .to(socket_id)
+                            .emit("terminal_error", &format!("Error writing to terminal: {}", e))
+                            .await
+                            .ok();
+                    }
+                    
+                    return Err(e);
                 }
             }
-        },
-    );
-}
-
-// Handle terminal resize events
-fn handle_terminal_resize(s: SocketRef, state: AppState) {
-    s.on(
-        "terminal_resize",
-        move |s: SocketRef, Data::<TerminalResizePayload>(payload): Data<TerminalResizePayload>| {
-            println!("Received terminal_resize event: {}x{}", payload.rows, payload.cols);
+        } else {
+            let error_msg = format!("No terminal found for email: {}", email);
             
-            // Here you would implement the resize functionality
-            // This would typically involve using ioctl with TIOCSWINSZ
-            // For now we'll just acknowledge it
-            s.emit("terminal_resize_ack", &format!("Resize to {}x{} acknowledged", payload.rows, payload.cols)).ok();
-        },
-    );
-}
-
-// Handle terminal close events
-fn handle_terminal_close(s: SocketRef, state: AppState) {
-    s.on(
-        "terminal_close",
-        move |s: SocketRef| {
-            let state_clone = state.clone();
-            println!("Received terminal_close event from socket {}", s.id);
-            
-            match close_terminal(&state_clone) {
-                Ok(_) => {
-                    s.emit("terminal_closed", "Terminal session closed").ok();
-                },
-                Err(e) => {
-                    println!("Error closing terminal: {}", e);
-                    s.emit("terminal_error", &format!("Close error: {}", e)).ok();
-                }
+            if let Some(socket_id) = socket_id {
+                state
+                    .socket_io
+                    .to(socket_id)
+                    .emit("terminal_error", &error_msg)
+                    .await
+                    .ok();
             }
-        },
-    );
+            
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                error_msg,
+            ));
+        }
+    } else {
+        
+        if let Some(socket_id) = socket_id {
+            state
+                .socket_io
+                .to(socket_id)
+                .emit("terminal_error", "No command provided")
+                .await
+                .ok();
+        }
+        
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "No command provided",
+        ));
+    }
+    
+    Ok(())
 }

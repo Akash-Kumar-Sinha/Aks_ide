@@ -14,7 +14,7 @@ pub async fn create_container(id: Sid, state: AppState, email: String) -> Option
     let docker = match Docker::connect_with_socket_defaults() {
         Ok(client) => client,
         Err(e) => {
-            eprintln!("❌ Failed to connect to Docker: {}", e);
+            eprintln!("Failed to connect to Docker: {}", e);
             return None;
         }
     };
@@ -30,9 +30,9 @@ pub async fn create_container(id: Sid, state: AppState, email: String) -> Option
         )
         .try_collect::<Vec<_>>()
         .await
-        .expect("❌ Failed to pull image");
+        .expect("Failed to pull image");
 
-        println!("✅ Image `{}` pulled successfully", IMAGE);
+        println!("Image `{}` pulled successfully", IMAGE);
     let container_config = Config {
         image: Some(IMAGE),
         tty: Some(true),
@@ -57,14 +57,13 @@ pub async fn create_container(id: Sid, state: AppState, email: String) -> Option
     let container = match create_result {
         Ok(container) => container,
         Err(e) => {
-            eprintln!("❌ Failed to create container: {}", e);
+            eprintln!("Failed to create container: {}", e);
             return None;
         }
     };
 
-    println!("🚀 Starting container: {}", container.id);
+    println!("Starting container: {}", container.id);
 
-    // 🧠 Fetch and update profile if user exists
     match profile::Entity::find()
         .filter(profile::Column::Email.eq(email.clone()))
         .one(&*state.db)
@@ -74,16 +73,16 @@ pub async fn create_container(id: Sid, state: AppState, email: String) -> Option
             let mut model: profile::ActiveModel = user.into();
             model.docker_container_id = Set(Some(container.id.clone()));
             if let Err(e) = model.update(&*state.db).await {
-                eprintln!("❌ Failed to update container_id in profile: {}", e);
+                eprintln!("Failed to update container_id in profile: {}", e);
             } else {
-                println!("✅ Updated user's container_id");
+                println!("Updated user's container_id");
             }
         }
         Ok(None) => {
-            eprintln!("⚠️ No user found with email: {}", email);
+            eprintln!("No user found with email: {}", email);
         }
         Err(e) => {
-            eprintln!("❌ DB error when finding user: {}", e);
+            eprintln!("DB error when finding user: {}", e);
         }
     }
 
@@ -91,14 +90,9 @@ pub async fn create_container(id: Sid, state: AppState, email: String) -> Option
         .start_container(&container.id, None::<StartContainerOptions<String>>)
         .await
     {
-        eprintln!("❌ Failed to start container: {}", e);
+        eprintln!("Failed to start container: {}", e);
         return None;
     }
-
-    println!(
-        "✅ Terminal container `{}` is up and running!",
-        container.id
-    );
 
     Some(container.id)
 }

@@ -12,7 +12,7 @@ const App = () => {
     <div className="h-screen flex flex-col bg-zinc-950 text-[#EBEBEF]">
       <Header />
       <Toaster
-        position="bottom-right"
+        position="bottom-center"
         reverseOrder={false}
         toastOptions={{
           success: {
