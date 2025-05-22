@@ -4,6 +4,8 @@ The **Terminal Module** is a core component of **Aks IDE** – a cloud-based, re
 
 This document outlines the current functionality, architecture, challenges, and future vision of the terminal module.
 
+![Terminal_image](image.png)
+<video controls src="aks_ide.mp4" title="Title"></video>
 ---
 
 ## 📌 Current Capabilities
