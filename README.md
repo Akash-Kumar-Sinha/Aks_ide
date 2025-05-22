@@ -22,13 +22,13 @@ This document outlines the current functionality, architecture, challenges, and 
 
 ### 💡 Core Features
 
-| Feature                    | Description                                                                 |
-|---------------------------|-----------------------------------------------------------------------------|
-| 🐧 Real Linux Shell        | Full-featured interactive shell (bash) inside Docker container.             |
-| 🔄 WebSocket I/O           | Real-time bidirectional communication via WebSocket for terminal streams.   |
-| 🖥️ xterm.js UI             | Responsive terminal interface rendered in-browser.                          |
-| 🧱 Single Terminal Only    | Currently supports one terminal per user session.                          |
-| 🛠 Install Dev Tools       | Users can install software (Node.js, npm, Python, etc.) inside container.  |
+| Feature                 | Description                                                               |
+| ----------------------- | ------------------------------------------------------------------------- |
+| 🐧 Real Linux Shell     | Full-featured interactive shell (bash) inside Docker container.           |
+| 🔄 WebSocket I/O        | Real-time bidirectional communication via WebSocket for terminal streams. |
+| 🖥️ xterm.js UI          | Responsive terminal interface rendered in-browser.                        |
+| 🧱 Single Terminal Only | Currently supports one terminal per user session.                         |
+| 🛠 Install Dev Tools     | Users can install software (Node.js, npm, Python, etc.) inside container. |
 
 ---
 
@@ -55,16 +55,14 @@ The terminal is evolving into a full-featured cloud IDE. Here’s what’s comin
 ### 🧑‍💻 3. Embedded Code Editor
 
 - Rich text/code editing with **Monaco Editor** or **CodeMirror**.
-- Syntax highlighting, IntelliSense (planned), and linting.
 - Save files that are instantly accessible from the terminal.
 - Compile or run code directly within the IDE interface.
-
 
 ### 🤖 4. AI Assistant via MCP Server
 
 - Integration with AI models to:
   - Auto-complete shell commands and code.
-  - Debug terminal errors.
+  - Debug terminal errors.(For Debug Mode, enable search engine to find the bug and resolve it itself.)
   - Explain terminal output or error logs.
   - Suggest optimizations or fixes.
 
@@ -99,20 +97,19 @@ The terminal is evolving into a full-featured cloud IDE. Here’s what’s comin
   - External persistent volumes.
   - Database or object storage to retain project files and session history.
 
-
 ---
 
 ## 📦 Tech Stack Summary
 
-| Layer          | Technology              |
-|----------------|--------------------------|
-| Frontend       | React, xterm.js          |
-| Backend        | Rust, Axum               |
-| Terminal       | PTY, Bash                |
-| Containers     | Docker (Ubuntu-based)    |
-| Communication  | WebSocket                |
-| Editor (Planned) | Monaco, CodeMirror     |
-| AI (Planned)   | MCP Server, Local LLMs   |
+| Layer                  | Technology                          |
+| ---------------------- | ----------------------------------- |
+| Frontend               | React, xterm.js                     |
+| Backend                | Rust, Axum                          |
+| Terminal               | PTY, Bash                           |
+| Containers             | Docker (Ubuntu-based)               |
+| Communication          | WebSocket                           |
+| Editor (Planned)       | Monaco, CodeMirror                  |
+| AI (Planned)           | MCP Server, Local LLMs              |
 | File Storage (Planned) | Cloud Storage, S3, External Volumes |
 
 ---
@@ -125,3 +122,4 @@ The Aks IDE Terminal Module aims to become much more than a shell interface. The
 - Seamless code–compile–debug–deploy lifecycle.
 - No need for local setup or external tools.
 - Future-ready for cloud development, AI pair programming, and collaborative coding.
+- A complete ecosystem for developers to build, test, and deploy applications in a single environment without doing manual setups or installations just have to install our IDE Desktop app and start coding.
