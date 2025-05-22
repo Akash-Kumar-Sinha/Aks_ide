@@ -1,91 +1,100 @@
 # 🧠 Aks IDE – Terminal Module
 
-The **Terminal Module** is a core component of **Aks IDE** – a cloud-based, real-time development environment that provides developers access to a fully-functional Linux shell directly in their browser. This module acts as the foundation for all code execution, file interaction, and developer tooling.
+The **Terminal Module** is a core component of **Aks IDE** – a cloud-based, real-time development environment that gives developers access to a fully-functional Linux shell directly in their browser. This module serves as the foundation for code execution, file interaction, and developer tooling within the IDE.
 
-This document outlines the current functionality, architecture, challenges, and future vision of the terminal module.
+---
 
-![Terminal_image](image.png)
-<video controls src="aks_ide.mp4" title="Title"></video>
+![Terminal Image](image.png)
+
+🎥 **Current Working Demo – `rust_server` Branch**
+<video controls src="aks_ide.mp4" title="Aks IDE – Rust Server Demo"></video>
+
+🎥 **Legacy Version – `main` Branch**
+<video controls src="aks_ide_old.mp4" title="Aks IDE – Legacy Demo"></video>
+
 ---
 
 ## 📌 Current Capabilities
 
 ### ✅ Real-Time Shell Access
 
-- Each session launches an **isolated Docker container** (Ubuntu-based) for the user.
-- A real Linux shell (usually `bash`) is executed inside the container.
-- Users can run commands, install programming languages (e.g., `node`, `python`), and execute scripts as on a local system.
-
-### ⚙️ Architecture Overview
-
-- **Backend**: Built with **Rust (Axum framework)**.
-- **Frontend**: Developed using **React** with **xterm.js** to render terminal output.
-- **Communication**: Real-time via **WebSockets**, using a **PTY (pseudo-terminal)** on the server side.
-
-### 💡 Core Features
-
-| Feature                 | Description                                                               |
-| ----------------------- | ------------------------------------------------------------------------- |
-| 🐧 Real Linux Shell     | Full-featured interactive shell (bash) inside Docker container.           |
-| 🔄 WebSocket I/O        | Real-time bidirectional communication via WebSocket for terminal streams. |
-| 🖥️ xterm.js UI          | Responsive terminal interface rendered in-browser.                        |
-| 🧱 Single Terminal Only | Currently supports one terminal per user session.                         |
-| 🛠 Install Dev Tools     | Users can install software (Node.js, npm, Python, etc.) inside container. |
+- Each session launches an **isolated Docker container** (Ubuntu-based).
+- Executes a real Linux shell (typically `bash`) inside the container.
+- Users can run commands, install packages (e.g., `node`, `python`), and execute scripts just like on a local system.
 
 ---
 
-## 🔮 Roadmap & Visionary Features
+## ⚙️ Architecture Overview
 
-The terminal is evolving into a full-featured cloud IDE. Here’s what’s coming next:
+| Component     | Technology           |
+| ------------- | -------------------- |
+| Backend       | Rust (Axum framework) |
+| Frontend      | React + xterm.js      |
+| Communication | WebSockets (bi-directional) |
+| Terminal Core | PTY (Pseudo-Terminal) |
 
-### 🗂 1. Multi-Terminal Support
+---
 
-- Ability to open multiple terminal instances (via tabs or split screens).
-- Each terminal may connect to:
-  - The same container (for parallel tasking),
-  - Or different services (e.g., one for build, one for logs).
+## 💡 Core Features
+
+| Feature                  | Description                                                                 |
+|--------------------------|-----------------------------------------------------------------------------|
+| 🐧 **Real Linux Shell**   | Full-featured bash shell inside an Ubuntu-based Docker container.           |
+| 🔄 **WebSocket I/O**      | Real-time terminal input/output via WebSocket.                              |
+| 🖥️ **xterm.js UI**         | Responsive terminal interface rendered in-browser using xterm.js.           |
+| 🧱 **Single Terminal**     | One terminal session per user (multi-terminal support coming soon).         |
+| 🛠 **Dev Tool Installation** | Users can install languages/tools (Node.js, Python, etc.) inside the container. |
+
+---
+
+## 🔮 Roadmap & Future Features
+
+### 🗂️ 1. Multi-Terminal Support
+
+- Multiple terminal instances via tabs or split panes.
+- Support for:
+  - Shared container across terminals.
+  - Dedicated services per terminal (e.g., build, logs, DB shell).
 
 ### 📁 2. File System Access & Management
 
-- Visual file explorer with full CRUD (Create, Read, Update, Delete) operations.
+- In-browser visual file explorer with full CRUD.
 - Features:
-  - Navigate through files and directories.
-  - Upload/download files between user device and container.
-  - Run or modify code directly from the terminal.
-  - File change syncing with in-browser code editor.
+  - Browse files/directories.
+  - Upload/download files.
+  - Sync changes with terminal and editor in real time.
 
 ### 🧑‍💻 3. Embedded Code Editor
 
-- Rich text/code editing with **Monaco Editor** or **CodeMirror**.
-- Save files that are instantly accessible from the terminal.
-- Compile or run code directly within the IDE interface.
+- Integrate **Monaco Editor** or **CodeMirror** for in-browser coding.
+- Edit files that are instantly runnable in the terminal.
+- Compile and run code without leaving the IDE.
 
-### 🤖 4. AI Assistant via MCP Server
+### 🤖 4. AI Assistant (via MCP Server)
 
-- Integration with AI models to:
-  - Auto-complete shell commands and code.
-  - Debug terminal errors.(For Debug Mode, enable search engine to find the bug and resolve it itself.)
-  - Explain terminal output or error logs.
-  - Suggest optimizations or fixes.
+- AI features include:
+  - Shell command auto-completion.
+  - Real-time debugging and error explanation.
+  - Optimizations and AI-suggested fixes.
+  - Debug mode: auto-search errors and provide resolutions.
 
 ### 🐳 5. Run Docker & Databases Inside IDE
 
-- Users can:
-  - Launch their own Docker containers from the terminal.
-  - Run databases like PostgreSQL, MySQL, MongoDB with exposed ports.
-  - Visualize DBs in browser via lightweight GUIs – without downloading any client.
-  - Experiment with microservices and containers directly from the terminal interface.
+- Launch Docker containers from terminal sessions.
+- Run databases like **PostgreSQL**, **MySQL**, **MongoDB** inside IDE.
+- Lightweight browser-based GUI for database management.
+- Simulate microservices and multi-container applications directly from the IDE.
 
 ---
 
 ## ⚙️ Why Rust for the Backend?
 
-- **Low-level access** to system processes and file descriptors.
-- **Better control** over PTY and IO streams than TypeScript or Node.js.
-- **Memory safety** and **performance** ideal for handling multiple real-time terminal sessions.
-- Rust eliminates common bugs and provides better stability for long-running processes.
+- **System-level control**: Ideal for managing PTYs, IO streams, and long-running processes.
+- **High performance**: Minimal memory usage and low latency.
+- **Memory safety**: Eliminates entire classes of bugs common in JS/TS.
+- **Binary data handling**: More robust than Node.js for binary streams and filesystem tasks.
 
-> _Note: The original prototype was in TypeScript, but encountered issues when reading binary data from the filesystem. Rust solves this by offering efficient, byte-level file IO._
+> _The prototype built with Node.js faced challenges with binary data and stream stability. Rust resolves these with performance and safety guarantees._
 
 ---
 
@@ -93,35 +102,50 @@ The terminal is evolving into a full-featured cloud IDE. Here’s what’s comin
 
 ### ❌ Ephemeral Docker Filesystem
 
-- Docker containers are **ephemeral** – all files are lost once the container stops.
-- This makes local storage inside containers unreliable.
-- Need for:
-  - External persistent volumes.
-  - Database or object storage to retain project files and session history.
+- Docker containers are **stateless** by default – all session data is lost on shutdown.
+- Limitations:
+  - Files are not retained across sessions.
+  - Makes project continuity and file storage unreliable.
+
+### ✅ Planned Solutions
+
+- Integration with:
+  - External volumes for persistent storage.
+  - Cloud storage (e.g., AWS S3) for file backups.
+  - Database or object storage for session snapshots and state.
 
 ---
 
 ## 📦 Tech Stack Summary
 
-| Layer                  | Technology                          |
-| ---------------------- | ----------------------------------- |
-| Frontend               | React, xterm.js                     |
-| Backend                | Rust, Axum                          |
-| Terminal               | PTY, Bash                           |
-| Containers             | Docker (Ubuntu-based)               |
-| Communication          | WebSocket                           |
-| Editor (Planned)       | Monaco, CodeMirror                  |
-| AI (Planned)           | MCP Server, Local LLMs              |
-| File Storage (Planned) | Cloud Storage, S3, External Volumes |
+| Layer         | Technology                                |
+|--------------|--------------------------------------------|
+| Frontend      | React, xterm.js                           |
+| Backend       | Rust (Axum)                               |
+| Terminal Core | PTY (bash shell)                          |
+| Containers    | Docker (Ubuntu base image)                |
+| Communication | WebSocket                                 |
+| Editor        | Monaco Editor / CodeMirror (planned)      |
+| AI Assistant  | MCP Server, local LLMs (planned)          |
+| File Storage  | Cloud Storage, S3, External Volumes       |
 
 ---
 
 ## 🚀 Vision
 
-The Aks IDE Terminal Module aims to become much more than a shell interface. The ultimate goal is a **cloud-native development operating system**:
+The Terminal Module aims to evolve into a full-stack **cloud-native development OS**:
 
-- AI-assisted and developer-friendly.
-- Seamless code–compile–debug–deploy lifecycle.
-- No need for local setup or external tools.
-- Future-ready for cloud development, AI pair programming, and collaborative coding.
-- A complete ecosystem for developers to build, test, and deploy applications in a single environment without doing manual setups or installations just have to install our IDE Desktop app and start coding.
+- Seamless **code → compile → debug → deploy** lifecycle.
+- Fully integrated **AI pair programming** and real-time collaboration.
+- Developer environments without local setup – code instantly from anywhere.
+- Local-first desktop application that connects to cloud infrastructure.
+
+> _Just install our desktop app, log in, and start building – no setup required._
+
+---
+
+## 📬 Contact
+
+Have questions, suggestions, or want to collaborate?
+
+- ✉️ Email: [akashkumarsinha403@gmail.com]
