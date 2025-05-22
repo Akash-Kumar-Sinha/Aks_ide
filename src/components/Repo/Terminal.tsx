@@ -64,8 +64,13 @@ const Terminal: React.FC<TerminalProps> = ({ containerClassName = "" }) => {
     }
   }, [user]);
 
+  // Consolidated socket event handlers
   useEffect(() => {
-    const handleTerminalSuccess = () => setTerminalActive(true);
+    const handleTerminalSuccess = () => {
+      console.log("Terminal success received");
+      setTerminalActive(true);
+    };
+
     const handleTerminalError = (errorMsg: string) => {
       console.error("Terminal error:", errorMsg);
       if (terminalInstance.current) {
@@ -74,21 +79,62 @@ const Terminal: React.FC<TerminalProps> = ({ containerClassName = "" }) => {
         );
       }
     };
+
     const handleTerminalClosed = () => {
+      console.log("Terminal closed received");
       setTerminalActive(false);
       setTerminalLoaded(false);
     };
 
+    const handleTerminalInfo = (info: string) => {
+      console.log("Terminal info received:", info);
+      if (terminalInstance.current) {
+        terminalInstance.current.write(`\r\n\x1b[33mInfo: ${info}\x1b[0m\r\n`);
+      }
+    };
+
+    const handleTerminalData = (data: string | Uint8Array) => {
+      if (terminalInstance.current) {
+        if (typeof data === "string") {
+          terminalInstance.current.write(data);
+        } else {
+          terminalInstance.current.write(new Uint8Array(data));
+        }
+      }
+    };
+
+    const handleTerminalOutput = (data: string) => {
+      if (terminalInstance.current) {
+        terminalInstance.current.write(data);
+      }
+    };
+
+    const handleClearTerminal = () => {
+      if (terminalInstance.current) {
+        terminalInstance.current.clear();
+      }
+    };
+
+    // Register all socket event listeners
     socket.on("terminal_success", handleTerminalSuccess);
     socket.on("terminal_error", handleTerminalError);
     socket.on("terminal_closed", handleTerminalClosed);
+    socket.on("terminal_info", handleTerminalInfo);
+    socket.on("terminal_data", handleTerminalData);
+    socket.on("terminal_output", handleTerminalOutput);
+    socket.on("clear_terminal", handleClearTerminal);
 
     return () => {
+      // Clean up all socket event listeners
       socket.off("terminal_success", handleTerminalSuccess);
       socket.off("terminal_error", handleTerminalError);
       socket.off("terminal_closed", handleTerminalClosed);
+      socket.off("terminal_info", handleTerminalInfo);
+      socket.off("terminal_data", handleTerminalData);
+      socket.off("terminal_output", handleTerminalOutput);
+      socket.off("clear_terminal", handleClearTerminal);
     };
-  }, []);
+  }, []); // Empty dependency array since we want this to run once
 
   useEffect(() => {
     if (
@@ -154,36 +200,7 @@ const Terminal: React.FC<TerminalProps> = ({ containerClassName = "" }) => {
       });
     });
 
-    const handleTerminalData = (data: string | Uint8Array) => {
-      if (terminalInstance.current) {
-        if (typeof data === "string") {
-          terminalInstance.current.write(data);
-        } else {
-          terminalInstance.current.write(new Uint8Array(data));
-        }
-      }
-    };
-
-    const handleTerminalOutput = (data: string) => {
-      if (terminalInstance.current) {
-        terminalInstance.current.write(data);
-      }
-    };
-
-    const handleClearTerminal = () => {
-      if (terminalInstance.current) {
-        terminalInstance.current.clear();
-      }
-    };
-
-    socket.on("terminal_data", handleTerminalData);
-    socket.on("terminal_output", handleTerminalOutput);
-    socket.on("clear_terminal", handleClearTerminal);
-
     return () => {
-      socket.off("terminal_data", handleTerminalData);
-      socket.off("terminal_output", handleTerminalOutput);
-      socket.off("clear_terminal", handleClearTerminal);
       window.removeEventListener("resize", handleResizeTerminal);
       terminal.dispose();
       terminalInstance.current = null;
@@ -273,8 +290,6 @@ const Terminal: React.FC<TerminalProps> = ({ containerClassName = "" }) => {
         {!terminalActive && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-950/50 backdrop-blur-sm">
             <div className="flex items-center space-x-3 text-gray-400">
-              {/* <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
-              <span>Initializing terminal...</span> */}
               <Loading loadingMessage="Initializing terminal..." />
             </div>
           </div>
@@ -301,7 +316,8 @@ const Terminal: React.FC<TerminalProps> = ({ containerClassName = "" }) => {
             </button>
             <button
               onClick={reloadTerminal}
-              disabled={!connected}
+              disabled={!terminalActive}
+
               className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-gray-800/50 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               title="Reload Terminal"
             >

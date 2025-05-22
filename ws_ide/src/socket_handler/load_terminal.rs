@@ -1,23 +1,19 @@
 use bollard::container::StartContainerOptions;
 use bollard::Docker;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
-use socketioxide::socket::Sid;
+use socketioxide::{extract::SocketRef, socket::Sid};
 
 use crate::{
     docker_vm::create_container::create_container, entities::profile,
     socket_handler::pseudo_terminal::pseudo_terminal, AppState,
 };
 
-pub async fn load_terminal(id: Sid, state: AppState, email: String) {
-    state
-        .socket_io
-        .to(id)
-        .emit(
-            "terminal_loading",
-            "Connecting to your development environment...",
-        )
-        .await
-        .ok();
+pub async fn load_terminal(s: &SocketRef, id: Sid, state: AppState, email: String) {
+    s.emit(
+        "terminal_loading",
+        "Connecting to your development environment...",
+    )
+    .ok();
 
     let docker_container_id: Option<String>;
     match profile::Entity::find()
@@ -30,15 +26,11 @@ pub async fn load_terminal(id: Sid, state: AppState, email: String) {
                 Ok(client) => client,
                 Err(e) => {
                     eprintln!("Failed to connect to Docker: {}", e);
-                    state
-                        .socket_io
-                        .to(id)
-                        .emit(
-                            "terminal_error",
-                            &format!("Failed to connect to Docker: {}", e),
-                        )
-                        .await
-                        .ok();
+                    s.emit(
+                        "terminal_error",
+                        &format!("Failed to connect to Docker: {}", e),
+                    )
+                    .ok();
                     return;
                 }
             };
@@ -57,31 +49,24 @@ pub async fn load_terminal(id: Sid, state: AppState, email: String) {
                                 " Failed to start existing container: {}. Creating new one...",
                                 e
                             );
-                            state
-                                .socket_io
-                                .to(id)
-                                .emit("terminal_info", "Creating a new development environment...")
-                                .await
+                            s.emit("terminal_info", "Creating a new development environment...")
                                 .ok();
                             docker_container_id =
-                                create_container(id, state.clone(), email.clone()).await;
+                                create_container(&s, id, state.clone(), email.clone()).await;
                         }
                     }
                     if docker_container_id.is_some() {
-                        state
-                            .socket_io
-                            .to(id)
-                            .emit(
-                                "terminal_info",
-                                &format!(
-                                    "Container {} ready. Starting terminal session...",
-                                    docker_container_id.as_ref().unwrap()
-                                ),
-                            )
-                            .await
-                            .ok();
+                        s.emit(
+                            "terminal_info",
+                            &format!(
+                                "Container {} ready. Starting terminal session...",
+                                docker_container_id.as_ref().unwrap()
+                            ),
+                        )
+                        .ok();
 
                         match pseudo_terminal(
+                            &s,
                             docker_container_id.clone(),
                             state.clone(),
                             email.clone(),
@@ -90,44 +75,34 @@ pub async fn load_terminal(id: Sid, state: AppState, email: String) {
                         {
                             Ok(_) => {}
                             Err(e) => {
-                                state
-                                    .socket_io
-                                    .to(id)
-                                    .emit(
-                                        "terminal_error",
-                                        &format!("Failed to start terminal: {}", e),
-                                    )
-                                    .await
-                                    .ok();
+                                s.emit(
+                                    "terminal_error",
+                                    &format!("Failed to start terminal: {}", e),
+                                )
+                                .ok();
                             }
                         }
                     }
                 }
                 None => {
                     eprintln!("User `{}` has no container ID assigned", email);
-                    state
-                        .socket_io
-                        .to(id)
-                        .emit("terminal_info", "Creating new development environment...")
-                        .await
+                    s.emit("terminal_info", "Creating new development environment...")
                         .ok();
 
-                    docker_container_id = create_container(id, state.clone(), email.clone()).await;
+                    docker_container_id =
+                        create_container(&s, id, state.clone(), email.clone()).await;
                     if docker_container_id.is_some() {
-                        state
-                            .socket_io
-                            .to(id)
-                            .emit(
-                                "terminal_info",
-                                &format!(
-                                    "Container {} ready. Starting terminal session...",
-                                    docker_container_id.as_ref().unwrap()
-                                ),
-                            )
-                            .await
-                            .ok();
+                        s.emit(
+                            "terminal_info",
+                            &format!(
+                                "Container {} ready. Starting terminal session...",
+                                docker_container_id.as_ref().unwrap()
+                            ),
+                        )
+                        .ok();
 
                         match pseudo_terminal(
+                            s,
                             docker_container_id.clone(),
                             state.clone(),
                             email.clone(),
@@ -136,47 +111,30 @@ pub async fn load_terminal(id: Sid, state: AppState, email: String) {
                         {
                             Ok(_) => {}
                             Err(e) => {
-                                state
-                                    .socket_io
-                                    .to(id)
-                                    .emit(
-                                        "terminal_error",
-                                        &format!("Failed to start terminal: {}", e),
-                                    )
-                                    .await
-                                    .ok();
+                                s.emit(
+                                    "terminal_error",
+                                    &format!("Failed to start terminal: {}", e),
+                                )
+                                .ok();
                             }
                         }
                     } else {
-                        state
-                            .socket_io
-                            .to(id)
-                            .emit("terminal_error", "Failed to create container")
-                            .await
-                            .ok();
+                        s.emit("terminal_error", "Failed to create container").ok();
                     }
                 }
             }
         }
         Ok(None) => {
             eprintln!("No user found with email: {}", email);
-            state
-                .socket_io
-                .to(id)
-                .emit(
-                    "terminal_error",
-                    &format!("No user found with email: {}", email),
-                )
-                .await
-                .ok();
+            s.emit(
+                "terminal_error",
+                &format!("No user found with email: {}", email),
+            )
+            .ok();
         }
         Err(e) => {
             eprintln!("DB error when finding user: {}", e);
-            state
-                .socket_io
-                .to(id)
-                .emit("terminal_error", &format!("Database error: {}", e))
-                .await
+            s.emit("terminal_error", &format!("Database error: {}", e))
                 .ok();
         }
     }

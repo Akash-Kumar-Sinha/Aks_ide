@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { socket } from "@/utils/Socket";
+// import { socket } from "@/utils/Socket";
 import useUserProfile from "@/utils/useUserProfile";
 import SideBar from "@/components/Repo/Sidebar/SideBar";
 import Explorer from "@/components/Repo/Sidebar/Explorer";
@@ -9,7 +9,7 @@ import Terminal from "@/components/Repo/Terminal";
 import { SidebarTabs } from "@/utils/types/types";
 import apiClient from "@/utils/apiClient";
 import { getAccessTokenFromLocalStorage } from "@/utils/getAccessTokenFromLocalStorage";
-import toast from "react-hot-toast";
+// import toast from "react-hot-toast";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -171,37 +171,37 @@ const Playground = () => {
   //   };
   // }, [userProfile]);
 
-  useEffect(() => {
-    // Add more detailed connection logging
-    console.log("Socket state:", socket);
-    console.log("Attempting to connect to server...");
+  // useEffect(() => {
+  //   // Add more detailed connection logging
+  //   console.log("Socket state:", socket);
+  //   console.log("Attempting to connect to server...");
 
-    // Listen for all socket lifecycle events
-    socket.on("connect", () => {
-      console.log("Connected with socket ID:", socket.id);
-      toast.success(`Connected with socket server ${socket.id}`);
-      if (userProfile) {
-        console.log("Emitting load_terminal with profile:", userProfile.email);
-        socket.emit("load_terminal", { email: userProfile.email });
-      }
-    });
+  //   // Listen for all socket lifecycle events
+  //   socket.on("connect", () => {
+  //     console.log("Connected with socket ID:", socket.id);
+  //     toast.success(`Connected with socket server ${socket.id}`);
+  //     if (userProfile) {
+  //       console.log("Emitting load_terminal with profile:", userProfile.email);
+  //       socket.emit("load_terminal", { email: userProfile.email });
+  //     }
+  //   });
 
-    socket.on("connect_error", (error) => {
-      console.error("Connection error:", error);
-      toast.error(`Socket connection error: ${error.message}`);
-    });
+  //   socket.on("connect_error", (error) => {
+  //     console.error("Connection error:", error);
+  //     toast.error(`Socket connection error: ${error.message}`);
+  //   });
 
-    socket.on("disconnect", (reason) => {
-      console.log("Disconnected:", reason);
-      toast.error(`Socket disconnected: ${reason}`);
-    });
+  //   socket.on("disconnect", (reason) => {
+  //     console.log("Disconnected:", reason);
+  //     toast.error(`Socket disconnected: ${reason}`);
+  //   });
 
-    return () => {
-      socket.off("connect");
-      socket.off("connect_error");
-      socket.off("disconnect");
-    };
-  }, [userProfile]);
+  //   return () => {
+  //     socket.off("connect");
+  //     socket.off("connect_error");
+  //     socket.off("disconnect");
+  //   };
+  // }, [userProfile]);
 
   useEffect(() => {
     updateFilePath();

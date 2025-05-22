@@ -3,6 +3,7 @@ use bollard::image::CreateImageOptions;
 use bollard::Docker;
 use futures_util::stream::TryStreamExt;
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
+use socketioxide::extract::SocketRef;
 use socketioxide::socket::Sid;
 
 use crate::entities::profile;
@@ -10,7 +11,12 @@ use crate::AppState;
 
 const IMAGE: &str = "ubuntu:20.04";
 
-pub async fn create_container(id: Sid, state: AppState, email: String) -> Option<String> {
+pub async fn create_container(
+    s: &SocketRef,
+    id: Sid,
+    state: AppState,
+    email: String,
+) -> Option<String> {
     println!(
         "🔧 Creating container for user: {} with socket ID: {:?}",
         email, id
@@ -19,29 +25,21 @@ pub async fn create_container(id: Sid, state: AppState, email: String) -> Option
     let docker = match Docker::connect_with_socket_defaults() {
         Ok(client) => client,
         Err(e) => {
-            eprintln!("❌ Failed to connect to Docker: {}", e);
-            state
-                .socket_io
-                .to(id)
-                .emit(
-                    "terminal_error",
-                    &format!("Failed to connect to Docker: {}", e),
-                )
-                .await
-                .ok();
+            eprintln!(" Failed to connect to Docker: {}", e);
+            s.emit(
+                "terminal_error",
+                &format!("Failed to connect to Docker: {}", e),
+            )
+            .ok();
             return None;
         }
     };
 
-    state
-        .socket_io
-        .to(id)
-        .emit(
-            "terminal_info",
-            "Pulling Ubuntu image, this may take a moment...",
-        )
-        .await
-        .ok();
+    s.emit(
+        "terminal_info",
+        "Pulling Ubuntu image, this may take a moment...",
+    )
+    .ok();
 
     let image_pull_result = docker
         .create_image(
@@ -57,24 +55,15 @@ pub async fn create_container(id: Sid, state: AppState, email: String) -> Option
 
     match image_pull_result {
         Ok(_) => {
-            println!("✅ Image `{}` pulled successfully", IMAGE);
-            state
-                .socket_io
-                .to(id)
-                .emit(
-                    "terminal_info",
-                    "Image pulled successfully. Creating container...",
-                )
-                .await
-                .ok();
+            println!("Image `{}` pulled successfully", IMAGE);
+            s.emit(
+                "terminal_info",
+                "Image pulled successfully. Creating container...",
+            )
+            .ok();
         }
         Err(e) => {
-            eprintln!("❌ Failed to pull image: {}", e);
-            state
-                .socket_io
-                .to(id)
-                .emit("terminal_error", &format!("Failed to pull image: {}", e))
-                .await
+            s.emit("terminal_error", &format!("Failed to pull image: {}", e))
                 .ok();
             return None;
         }
@@ -111,29 +100,21 @@ pub async fn create_container(id: Sid, state: AppState, email: String) -> Option
 
     let container = match create_result {
         Ok(container) => {
-            println!("✅ Container created successfully: {}", container.id);
-            state
-                .socket_io
-                .to(id)
-                .emit(
-                    "terminal_info",
-                    "Container created successfully. Starting container...",
-                )
-                .await
-                .ok();
+            println!("Container created successfully: {}", container.id);
+            s.emit(
+                "terminal_info",
+                "Container created successfully. Starting container...",
+            )
+            .ok();
             container
         }
         Err(e) => {
-            eprintln!("❌ Failed to create container: {}", e);
-            state
-                .socket_io
-                .to(id)
-                .emit(
-                    "terminal_error",
-                    &format!("Failed to create container: {}", e),
-                )
-                .await
-                .ok();
+            eprintln!(" Failed to create container: {}", e);
+            s.emit(
+                "terminal_error",
+                &format!("Failed to create container: {}", e),
+            )
+            .ok();
             return None;
         }
     };
@@ -143,28 +124,20 @@ pub async fn create_container(id: Sid, state: AppState, email: String) -> Option
         .await
     {
         Ok(_) => {
-            println!("✅ Container started successfully: {}", container.id);
-            state
-                .socket_io
-                .to(id)
-                .emit(
-                    "terminal_info",
-                    "Container started successfully. Updating user profile...",
-                )
-                .await
-                .ok();
+            println!("Container started successfully: {}", container.id);
+            s.emit(
+                "terminal_info",
+                "Container started successfully. Updating user profile...",
+            )
+            .ok();
         }
         Err(e) => {
-            eprintln!("❌ Failed to start container: {}", e);
-            state
-                .socket_io
-                .to(id)
-                .emit(
-                    "terminal_error",
-                    &format!("Failed to start container: {}", e),
-                )
-                .await
-                .ok();
+            eprintln!(" Failed to start container: {}", e);
+            s.emit(
+                "terminal_error",
+                &format!("Failed to start container: {}", e),
+            )
+            .ok();
             return None;
         }
     }
@@ -180,59 +153,38 @@ pub async fn create_container(id: Sid, state: AppState, email: String) -> Option
 
             match model.update(&*state.db).await {
                 Ok(_) => {
-                    println!("✅ Updated user's container_id in database");
-                    state
-                        .socket_io
-                        .to(id)
-                        .emit(
-                            "terminal_info",
-                            "Profile updated. Container ready for terminal session.",
-                        )
-                        .await
-                        .ok();
+                    println!("Updated user's container_id in database");
+                    s.emit(
+                        "terminal_info",
+                        "Profile updated. Container ready for terminal session.",
+                    )
+                    .ok();
                 }
                 Err(e) => {
-                    eprintln!("❌ Failed to update container_id in profile: {}", e);
-                    state
-                        .socket_io
-                        .to(id)
-                        .emit(
-                            "terminal_error",
-                            &format!("Failed to update profile: {}", e),
-                        )
-                        .await
-                        .ok();
+                    s.emit(
+                        "terminal_error",
+                        &format!("Failed to update profile: {}", e),
+                    )
+                    .ok();
                 }
             }
         }
         Ok(None) => {
-            eprintln!("❌ No user found with email: {}", email);
-            state
-                .socket_io
-                .to(id)
-                .emit(
-                    "terminal_error",
-                    &format!("No user found with email: {}", email),
-                )
-                .await
-                .ok();
+            eprintln!(" No user found with email: {}", email);
+            s.emit(
+                "terminal_error",
+                &format!("No user found with email: {}", email),
+            )
+            .ok();
             return None;
         }
         Err(e) => {
-            eprintln!("❌ DB error when finding user: {}", e);
-            state
-                .socket_io
-                .to(id)
-                .emit("terminal_error", &format!("Database error: {}", e))
-                .await
+            eprintln!(" DB error when finding user: {}", e);
+            s.emit("terminal_error", &format!("Database error: {}", e))
                 .ok();
             return None;
         }
     }
 
-    println!(
-        "🎉 Container creation completed successfully for {}: {}",
-        email, container.id
-    );
     Some(container.id)
 }

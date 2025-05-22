@@ -6,6 +6,7 @@ use nix::sys::termios::{
     self, InputFlags, LocalFlags, OutputFlags, SetArg, SpecialCharacterIndices,
 };
 use nix::unistd::{close, dup2};
+use socketioxide::extract::SocketRef;
 
 use std::os::unix::io::{AsRawFd, FromRawFd, RawFd};
 use std::process::{Command, Stdio};
@@ -15,6 +16,7 @@ use tokio::task;
 use crate::AppState;
 
 pub async fn pseudo_terminal(
+    s: &SocketRef,
     docker_container_id: Option<String>,
     state: AppState,
     email: String,
@@ -130,25 +132,20 @@ pub async fn pseudo_terminal(
         }
         Err(e) => {
             println!("Failed to start docker exec: {}", e);
-            state
-                .socket_io
-                .emit(
-                    "terminal_error",
-                    &format!("Failed to start docker exec: {}", e),
-                )
-                .await
-                .ok();
+            s.emit(
+                "terminal_error",
+                &format!("Failed to start docker exec: {}", e),
+            )
+            .ok();
             return Err(e);
         }
     };
 
-    state
-        .socket_io
-        .emit("terminal_success", "Terminal created successfully")
-        .await
+    s.emit("terminal_success", "Terminal created successfully")
         .ok();
 
-    let socket_io = state.socket_io.clone();
+    // Clone the socket for the spawned tasks
+    let socket_clone = s.clone();
     let email_clone = email.clone();
     let master_clone = master.try_clone().expect("Failed to clone master file");
 
@@ -160,20 +157,19 @@ pub async fn pseudo_terminal(
             match reader.read(&mut buffer).await {
                 Ok(0) => {
                     println!("Terminal session ended for {}", email_clone);
-                    socket_io
+                    socket_clone
                         .emit("terminal_closed", "Terminal session ended")
-                        .await
                         .ok();
                     break;
                 }
                 Ok(n) => {
                     if let Ok(text) = std::str::from_utf8(&buffer[0..n]) {
-                        socket_io.emit("terminal_data", text).await.ok();
+                        socket_clone.emit("terminal_data", text).ok();
                     } else {
                         let mut valid_end = n;
                         while valid_end > 0 {
                             if let Ok(text) = std::str::from_utf8(&buffer[0..valid_end]) {
-                                socket_io.emit("terminal_data", text).await.ok();
+                                socket_clone.emit("terminal_data", text).ok();
                                 break;
                             }
                             valid_end -= 1;
@@ -191,9 +187,8 @@ pub async fn pseudo_terminal(
                 }
                 Err(e) => {
                     println!("Terminal read error for {}: {}", email_clone, e);
-                    socket_io
+                    socket_clone
                         .emit("terminal_error", &format!("Terminal read error: {}", e))
-                        .await
                         .ok();
                     break;
                 }
@@ -201,7 +196,8 @@ pub async fn pseudo_terminal(
         }
     });
 
-    let socket_io_clone = state.socket_io.clone();
+    // Clone the socket for the second task
+    let socket_clone2 = s.clone();
     let email_clone2 = email.clone();
     let state_clone = state.clone();
 
@@ -228,9 +224,8 @@ pub async fn pseudo_terminal(
             terminal_guard.remove(&email_clone2);
         }
 
-        socket_io_clone
+        socket_clone2
             .emit("terminal_closed", "Docker process terminated")
-            .await
             .ok();
     });
 

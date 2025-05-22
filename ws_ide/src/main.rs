@@ -9,9 +9,7 @@ use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 use socket_handler::{
     load_terminal::load_terminal,
-    terminal_events::{
-        handle_close_terminal, handle_terminal_input, handle_terminal_resize, handle_terminal_write,
-    },
+    terminal_events::{handle_close_terminal, handle_terminal_input, handle_terminal_resize},
 };
 use socketioxide::{
     extract::{Data, SocketRef},
@@ -33,7 +31,6 @@ mod socket_handler;
 #[derive(Clone)]
 pub struct AppState {
     pub db: Arc<DatabaseConnection>,
-    pub socket_io: Arc<SocketIo>,
     pub terminal_mapping: Arc<Mutex<HashMap<String, Option<File>>>>,
     pub socket_mapping: Arc<Mutex<HashMap<Sid, String>>>,
     pub email_mapping: Arc<Mutex<HashMap<String, Sid>>>,
@@ -78,7 +75,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let app_state = AppState {
         db: Arc::new(db),
-        socket_io: Arc::new(io.clone()),
         terminal_mapping: Arc::new(Mutex::new(HashMap::new())),
         socket_mapping: Arc::new(Mutex::new(HashMap::new())),
         email_mapping: Arc::new(Mutex::new(HashMap::new())),
@@ -117,7 +113,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .insert(payload.email.clone(), s.id.clone());
 
                 Box::pin(async move {
-                    load_terminal(socket_id, app_state, payload.email).await;
+                    load_terminal(&s, socket_id, app_state, payload.email).await;
                 })
             }
         });
@@ -125,21 +121,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let app_state_inner = app_state_clone.clone();
         s.on("terminal_input", {
             let app_state = app_state_inner.clone();
-            move |_s: SocketRef,
+            move |s: SocketRef,
                   Data::<TerminalInputPayload>(payload): Data<TerminalInputPayload>| {
                 let app_state = app_state.clone();
 
                 Box::pin(async move {
-                    println!(
-                        "Terminal input for {}: {:?}",
-                        payload.email,
-                        payload.data.as_bytes()
-                    );
-
-                    match handle_terminal_input(app_state, payload).await {
-                        Ok(_) => {
-                            println!("Terminal input handled successfully");
-                        }
+                    match handle_terminal_input(&s, app_state, payload).await {
+                        Ok(_) => {}
                         Err(e) => {
                             println!("Terminal input failed: {}", e);
                         }
@@ -156,15 +144,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let app_state = app_state.clone();
 
                 Box::pin(async move {
-                    println!(
-                        "Terminal resize for {}: {}x{}",
-                        payload.email, payload.cols, payload.rows
-                    );
-
-                    match handle_terminal_resize(app_state, payload).await {
-                        Ok(_) => {
-                            println!("Terminal resize handled successfully");
-                        }
+                    match handle_terminal_resize(&s, app_state, payload).await {
+                        Ok(_) => {}
                         Err(e) => {
                             println!("Terminal resize failed: {}", e);
                         }
@@ -173,17 +154,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         });
 
+        static HANDLER_CALL_COUNT: std::sync::atomic::AtomicUsize =
+            std::sync::atomic::AtomicUsize::new(0);
+
         let app_state_inner = app_state_clone.clone();
         s.on("close_terminal", {
             let app_state = app_state_inner.clone();
             move |s: SocketRef,
                   Data::<CloseTerminalPayload>(payload): Data<CloseTerminalPayload>| {
                 let app_state = app_state.clone();
+                let call_count =
+                    HANDLER_CALL_COUNT.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1;
+                println!("close_terminal handler called {} times", call_count);
 
                 Box::pin(async move {
-                    println!("Closing terminal for {}", payload.email);
+                    println!("=== CLOSE TERMINAL DEBUG ===");
+                    println!("Socket ID that sent request: {}", s.id);
+                    println!("Email in payload: {}", payload.email);
 
-                    match handle_close_terminal(app_state, payload).await {
+                    match handle_close_terminal(&s, app_state, payload).await {
                         Ok(_) => {
                             println!("Terminal closed successfully");
                         }
@@ -191,27 +180,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             println!("Terminal close failed: {}", e);
                         }
                     }
-                })
-            }
-        });
-
-        let app_state_inner = app_state_clone.clone();
-        s.on("terminal_write", {
-            let app_state = app_state_inner.clone();
-            move |s: SocketRef, Data::<LoadTerminalPayload>(payload): Data<LoadTerminalPayload>| {
-                let app_state = app_state.clone();
-
-                Box::pin(async move {
-                    println!("Terminal writing for {}", payload.email);
-
-                    match handle_terminal_write(app_state, payload).await {
-                        Ok(_) => {
-                            println!("Terminal write completed successfully");
-                        }
-                        Err(e) => {
-                            println!("Terminal write failed: {}", e);
-                        }
-                    }
+                    println!("=== END DEBUG ===");
                 })
             }
         });
