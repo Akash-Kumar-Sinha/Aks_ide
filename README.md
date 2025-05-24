@@ -154,3 +154,4 @@ The Terminal Module aims to evolve into a full-stack **cloud-native development 
 Have questions, suggestions, or want to collaborate?
 
 - ✉️ Email: [akashkumarsinha403@gmail.com]
+- Blog: [https://akside.hashnode.dev/introducing-aks-ide-terminal-module]
