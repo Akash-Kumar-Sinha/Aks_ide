@@ -37,7 +37,7 @@ pub async fn create_container(
 
     s.emit(
         "terminal_info",
-        "Pulling Ubuntu image, this may take a moment...",
+        "Pulling Ubuntu image, this may take a moment",
     )
     .ok();
 
@@ -58,7 +58,7 @@ pub async fn create_container(
             println!("Image `{}` pulled successfully", IMAGE);
             s.emit(
                 "terminal_info",
-                "Image pulled successfully. Creating container...",
+                "Image pulled successfully. Creating container",
             )
             .ok();
         }
@@ -103,7 +103,7 @@ pub async fn create_container(
             println!("Container created successfully: {}", container.id);
             s.emit(
                 "terminal_info",
-                "Container created successfully. Starting container...",
+                "Container created successfully. Starting container",
             )
             .ok();
             container
@@ -127,7 +127,7 @@ pub async fn create_container(
             println!("Container started successfully: {}", container.id);
             s.emit(
                 "terminal_info",
-                "Container started successfully. Updating user profile...",
+                "Container started successfully. Updating user profile",
             )
             .ok();
         }

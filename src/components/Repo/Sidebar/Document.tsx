@@ -1,7 +1,7 @@
 import useInstallationGuide from "@/utils/useInstallationGuide";
 import { useState } from "react";
 import toast from "react-hot-toast";
-import { IoCopyOutline } from "react-icons/io5";
+import { Search, Copy, Terminal } from "lucide-react";
 
 const Document = () => {
   const { installationCommands } = useInstallationGuide();
@@ -28,60 +28,93 @@ const Document = () => {
     searchQuery.trim().length === 0 ? installationCommands : filteredCommands;
 
   return (
-    <div className="w-72 h-full bg-zinc-950 flex flex-col overflow-y-scroll text-sm">
-      <div className="p-4 border-b border-zinc-800 text-white">
-        <input
-          type="text"
-          placeholder="Search for commands..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-zinc-800 text-white rounded border border-zinc-700 p-2"
-        />
+    <div className="h-full flex flex-col bg-gradient-to-b from-zinc-950 to-zinc-900">
+      {/* Header Section - Similar to Explorer's ProjectHeader */}
+      <div className="px-4 py-3 border-b border-zinc-800/50 bg-gradient-to-r from-zinc-900/50 to-zinc-800/30">
+        <div className="flex items-center space-x-2 mb-2">
+          <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
+          <h3 className="text-zinc-100 font-semibold text-sm">
+            Installation Guide
+          </h3>
+        </div>
+
+        {/* Search Bar - Similar to Explorer's search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
+          <input
+            type="text"
+            placeholder="Search for commands..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 h-8 bg-zinc-800/50 border border-zinc-700/50 text-zinc-100 text-xs rounded
+                       focus:ring-1 focus:ring-purple-600/50 focus:border-purple-600/50
+                       transition-all duration-200 placeholder-zinc-500"
+          />
+        </div>
       </div>
 
-      <div className="p-4">
-        <h3 className="text-lg font-semibold text-white mb-4">
-          Installation Guide
-        </h3>
-        {commandsToDisplay.map(
-          (commandGroup, index) =>
-            commandGroup.commands.length > 0 && (
-              <div
-                key={index}
-                className="mb-6 bg-zinc-900 rounded-lg p-4 shadow"
-              >
-                <h4 className="font-semibold text-purple-500 text-sm mb-2">
-                  {commandGroup.title}
-                </h4>
-                <p className="text-gray-400 text-xs mb-2">
-                  {commandGroup.description}
-                </p>
-                <ul className="space-y-2">
-                  {commandGroup.commands.map((command, cmdIndex) => (
-                    <li
-                      key={cmdIndex}
-                      className="flex items-center justify-between text-white bg-zinc-800 p-2 rounded hover:bg-zinc-700"
-                    >
-                      <span className="truncate">{command}</span>
-                      <button
-                        onClick={() => copyToClipboard(command)}
-                        className="text-yellow-400 hover:text-yellow-500"
-                        title="Copy to Clipboard"
-                      >
-                        <IoCopyOutline />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )
-        )}
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-auto custom-scrollbar">
+        <div className="p-3">
+          {commandsToDisplay.map(
+            (commandGroup, index) =>
+              commandGroup.commands.length > 0 && (
+                <div
+                  key={index}
+                  className="mb-4 bg-zinc-900/50 rounded border border-zinc-800/50 overflow-hidden hover:border-zinc-700/50 transition-all duration-200"
+                >
+                  {/* Command Group Header */}
+                  <div className="px-3 py-2 border-b border-zinc-800/50 bg-zinc-800/30">
+                    <div className="flex items-center space-x-2">
+                      <Terminal className="w-3.5 h-3.5 text-purple-600" />
+                      <h4 className="font-semibold text-purple-600 text-xs">
+                        {commandGroup.title}
+                      </h4>
+                    </div>
+                    <p className="text-zinc-500 text-xs mt-1 leading-relaxed">
+                      {commandGroup.description}
+                    </p>
+                  </div>
 
-        {commandsToDisplay.every((group) => group.commands.length === 0) && (
-          <p className="text-gray-400 text-center mt-8">
-            No commands match your search.
-          </p>
-        )}
+                  {/* Commands List */}
+                  <div className="p-2 space-y-1">
+                    {commandGroup.commands.map((command, cmdIndex) => (
+                      <div
+                        key={cmdIndex}
+                        className="flex items-center justify-between text-zinc-100 bg-zinc-800/50 p-2 rounded hover:bg-zinc-700/50 transition-all duration-200 group"
+                      >
+                        <code className="flex-1 text-xs font-mono pr-2 break-all leading-relaxed">
+                          {command}
+                        </code>
+                        <button
+                          onClick={() => copyToClipboard(command)}
+                          className="flex-shrink-0 p-1.5 rounded text-zinc-500 hover:text-purple-600 hover:bg-zinc-600/50 transition-all duration-200 opacity-0 group-hover:opacity-100"
+                          title="Copy to Clipboard"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+          )}
+
+          {/* Empty State */}
+          {commandsToDisplay.every((group) => group.commands.length === 0) && (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-12 h-12 bg-zinc-800/50 rounded-full flex items-center justify-center mb-3">
+                <Search className="w-6 h-6 text-zinc-500" />
+              </div>
+              <h4 className="text-zinc-300 font-medium text-sm mb-1">
+                No commands match your search
+              </h4>
+              <p className="text-zinc-500 text-xs">
+                Try different keywords or clear your search
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

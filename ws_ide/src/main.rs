@@ -8,8 +8,8 @@ use axum::{
 use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 use socket_handler::{
-    load_terminal::load_terminal,
-    terminal_events::{handle_close_terminal, handle_terminal_input, handle_terminal_resize},
+    load_terminal::load_terminal, repo_events::get_repo_structure, terminal_events::{ handle_close_terminal, handle_terminal_input, handle_terminal_resize,
+    }
 };
 use socketioxide::{
     extract::{Data, SocketRef},
@@ -38,8 +38,7 @@ pub struct AppState {
 
 #[derive(Debug, Clone, Deserialize)]
 struct LoadTerminalPayload {
-    email: String,
-    command: Option<String>,
+    email: String
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -148,6 +147,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         Ok(_) => {}
                         Err(e) => {
                             println!("Terminal resize failed: {}", e);
+                        }
+                    }
+                })
+            }
+        });
+
+        let app_state_inner = app_state_clone.clone();
+        s.on("repo_tree", {
+            move |s: SocketRef, Data::<LoadTerminalPayload>(payload): Data<LoadTerminalPayload>| {
+            let app_state = app_state_inner.clone();
+             
+
+                Box::pin(async move {
+                    match get_repo_structure(&s, app_state, payload).await {
+                        Ok(_) => {
+                            println!("✅ repo_structure emitted successfully.");
+                        }
+                        Err(e) => {
+                            eprintln!("❌ Failed to emit repo_structure: {}", e);
                         }
                     }
                 })

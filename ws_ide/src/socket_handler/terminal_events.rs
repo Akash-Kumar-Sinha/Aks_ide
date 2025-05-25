@@ -1,7 +1,4 @@
-use crate::{
-    AppState, CloseTerminalPayload, LoadTerminalPayload, TerminalInputPayload,
-    TerminalResizePayload,
-};
+use crate::{AppState, CloseTerminalPayload, TerminalInputPayload, TerminalResizePayload};
 use nix::libc;
 use nix::pty::Winsize;
 use socketioxide::extract::SocketRef;

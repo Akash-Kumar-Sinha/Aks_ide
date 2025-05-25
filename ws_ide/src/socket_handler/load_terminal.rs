@@ -11,7 +11,7 @@ use crate::{
 pub async fn load_terminal(s: &SocketRef, id: Sid, state: AppState, email: String) {
     s.emit(
         "terminal_loading",
-        "Connecting to your development environment...",
+        "Connecting to your development environment",
     )
     .ok();
 
@@ -46,10 +46,10 @@ pub async fn load_terminal(s: &SocketRef, id: Sid, state: AppState, email: Strin
                         }
                         Err(e) => {
                             println!(
-                                " Failed to start existing container: {}. Creating new one...",
+                                " Failed to start existing container: {}. Creating new one",
                                 e
                             );
-                            s.emit("terminal_info", "Creating a new development environment...")
+                            s.emit("terminal_info", "Creating a new development environment")
                                 .ok();
                             docker_container_id =
                                 create_container(&s, id, state.clone(), email.clone()).await;
@@ -59,7 +59,7 @@ pub async fn load_terminal(s: &SocketRef, id: Sid, state: AppState, email: Strin
                         s.emit(
                             "terminal_info",
                             &format!(
-                                "Container {} ready. Starting terminal session...",
+                                "Container {} ready. Starting terminal session",
                                 docker_container_id.as_ref().unwrap()
                             ),
                         )
@@ -86,7 +86,7 @@ pub async fn load_terminal(s: &SocketRef, id: Sid, state: AppState, email: Strin
                 }
                 None => {
                     eprintln!("User `{}` has no container ID assigned", email);
-                    s.emit("terminal_info", "Creating new development environment...")
+                    s.emit("terminal_info", "Creating new development environment")
                         .ok();
 
                     docker_container_id =
@@ -95,7 +95,7 @@ pub async fn load_terminal(s: &SocketRef, id: Sid, state: AppState, email: Strin
                         s.emit(
                             "terminal_info",
                             &format!(
-                                "Container {} ready. Starting terminal session...",
+                                "Container {} ready. Starting terminal session",
                                 docker_container_id.as_ref().unwrap()
                             ),
                         )

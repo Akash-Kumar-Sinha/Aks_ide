@@ -1,14 +1,11 @@
-use futures_util::StreamExt;
 use nix::libc;
 use nix::pty::{openpty, Winsize};
-use nix::sys::signal::{self, Signal};
 use nix::sys::termios::{
     self, InputFlags, LocalFlags, OutputFlags, SetArg, SpecialCharacterIndices,
 };
-use nix::unistd::{close, dup2};
 use socketioxide::extract::SocketRef;
 
-use std::os::unix::io::{AsRawFd, FromRawFd, RawFd};
+use std::os::unix::io::FromRawFd;
 use std::process::{Command, Stdio};
 use tokio::io::AsyncReadExt;
 use tokio::task;
@@ -144,12 +141,11 @@ pub async fn pseudo_terminal(
     s.emit("terminal_success", "Terminal created successfully")
         .ok();
 
-    // Clone the socket for the spawned tasks
     let socket_clone = s.clone();
     let email_clone = email.clone();
     let master_clone = master.try_clone().expect("Failed to clone master file");
 
-    let read_task = task::spawn(async move {
+    let _read_task = task::spawn(async move {
         let mut buffer = [0u8; 4096];
         let mut reader = tokio::fs::File::from_std(master_clone);
 
@@ -196,7 +192,6 @@ pub async fn pseudo_terminal(
         }
     });
 
-    // Clone the socket for the second task
     let socket_clone2 = s.clone();
     let email_clone2 = email.clone();
     let state_clone = state.clone();
