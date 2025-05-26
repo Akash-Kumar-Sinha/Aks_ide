@@ -8,7 +8,6 @@ import Document from "./Document";
 import GitBranch from "./GitBranch";
 import { FolderOpen, Plus, Search, RefreshCw } from "lucide-react";
 
-// Type definitions for the repository structure from Rust backend
 interface RepoStructureResponse {
   current_directory?: string;
   structure?: FileStructure;
@@ -41,22 +40,20 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
   }) => {
     const [searchTerm, setSearchTerm] = React.useState("");
 
-    // Type-safe extraction of the file structure from the socket response
     const getProcessedFileStructure = (): FileStructure | null => {
       try {
-        // Check if fileStructure has the expected format from socket response
         const repoResponse = fileStructure as RepoStructureResponse;
 
         if (
+          repoResponse.current_directory &&
+          typeof repoResponse.current_directory === "string" &&
           repoResponse.structure &&
           typeof repoResponse.structure === "object"
         ) {
           return repoResponse.structure;
         }
 
-        // Fallback: check if fileStructure is already in the flat format
         if (typeof fileStructure === "object" && fileStructure !== null) {
-          // Check if it looks like a FileStructure (has either _files or directory-like keys)
           const keys = Object.keys(fileStructure);
           const hasValidStructure = keys.some(
             (key) =>
@@ -116,7 +113,7 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
     };
 
     const EmptyState = () => (
-      <div className="flex flex-col items-center justify-center  text-center">
+      <div className="flex flex-col items-center justify-center text-center">
         <div className="w-16 h-16 bg-zinc-800/50 rounded-full flex items-center justify-center mb-4">
           <FolderOpen className="w-8 h-8 text-zinc-500" />
         </div>
@@ -128,16 +125,11 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
           <Input
             ref={projectName}
             placeholder="Enter project name"
-            className="bg-zinc-900/50 border-zinc-700/50 text-zinc-100 text-sm h-10 
-                       focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 
-                       transition-all duration-200"
+            className="bg-zinc-900/50 border-zinc-700/50 text-zinc-100 text-sm h-10 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-200"
           />
           <Button
             onClick={createTemplate}
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 
-                       hover:from-blue-700 hover:to-purple-700 text-white text-sm h-10
-                       transition-all duration-200 shadow-lg hover:shadow-xl
-                       hover:scale-[1.02] active:scale-[0.98]"
+            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-sm h-10 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
           >
             <Plus className="w-4 h-4 mr-2" />
             Create New Project
@@ -158,6 +150,9 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
           </h4>
           <p className="text-zinc-500 text-xs mt-1">
             Fetching project structure...
+          </p>
+          <p className="text-zinc-500 text-xs mt-1">
+            It may take a moment depending on the size of the repository.
           </p>
         </div>
       </div>
@@ -198,16 +193,13 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
             )}
           </div>
 
-          {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
             <Input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search files..."
-              className="pl-9 h-8 bg-zinc-800/50 border-zinc-700/50 text-zinc-100 text-xs
-                         focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50
-                         transition-all duration-200"
+              className="pl-9 h-8 bg-zinc-800/50 border-zinc-700/50 text-zinc-100 text-xs focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200"
             />
           </div>
         </div>
@@ -274,7 +266,6 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
           )}
         </div>
 
-        {/* Bottom Status Bar */}
         <div className="h-6 bg-zinc-900/50 border-t border-zinc-800/50 flex items-center px-3">
           <div className="flex items-center space-x-2 text-xs text-zinc-500">
             {activeSidebarTab === SidebarTabs.EXPLORER &&

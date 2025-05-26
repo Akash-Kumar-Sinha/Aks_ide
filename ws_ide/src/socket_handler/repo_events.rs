@@ -1,4 +1,5 @@
-use crate::{AppState, LoadTerminalPayload};
+use crate::socket_handler::pseudo_terminal::pseudo_back_terminal;
+use crate::{AppState, CreateProjectPayload, LoadTerminalPayload};
 use regex::Regex;
 use serde_json::{json, Value};
 use socketioxide::extract::SocketRef;
@@ -8,6 +9,7 @@ use std::future::Future;
 use std::pin::Pin;
 use tokio::io::AsyncReadExt;
 use tokio::time::{timeout, Duration};
+    use std::io::Write;
 
 pub async fn get_repo_structure(
     s: &SocketRef,
@@ -63,6 +65,56 @@ pub async fn get_repo_structure(
     Ok(())
 }
 
+
+pub async fn create_new_project(
+    s: SocketRef,
+    state: AppState,
+    payload: CreateProjectPayload,
+) -> Result<(), std::io::Error> {
+    let email = payload.email.clone();
+    println!("Creating new project for email: {}", email);  
+    // Clone terminal handle safely
+    let mut terminal_file = {
+        let terminal_mapping = state.back_terminal_mapping.lock().unwrap();
+        match terminal_mapping.get(&email) {
+            Some(Some(file)) => file.try_clone()?,
+            _ => {
+                let err_msg = format!("No terminal found for email: {}", email);
+                return Err(std::io::Error::new(std::io::ErrorKind::NotFound, err_msg));
+            }
+        }
+    };
+
+    // Sanitize project name
+    let sanitized_name = payload
+        .project_name
+        .chars()
+        .filter(|c| c.is_alphanumeric() || *c == '-' || *c == '_')
+        .collect::<String>();
+
+    if sanitized_name.is_empty() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "Project name contains no valid characters",
+        ));
+    }
+
+    // Write safe shell commands
+    writeln!(terminal_file, "cd /home")?;
+    writeln!(terminal_file, "mkdir {}", sanitized_name)?;
+
+    // Optional: sleep to allow shell time to process commands
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    terminal_file.flush()?;
+
+    // Emit success response back to client
+    s.emit("repo_created", &payload.project_name).ok();
+    get_repo_structure(&s, state, LoadTerminalPayload { email }).await?;        
+
+    Ok(())
+}
+
+
 // Function to strip ANSI color codes from text
 fn strip_ansi_codes(text: &str) -> String {
     let ansi_regex = Regex::new(r"\x1b\[[0-9;]*m").unwrap();
@@ -70,10 +122,9 @@ fn strip_ansi_codes(text: &str) -> String {
 }
 
 async fn get_current_directory(email: &str, state: &AppState) -> Result<String, std::io::Error> {
-    use std::io::Write;
 
     let mut terminal_file = {
-        let terminal_mapping = state.terminal_mapping.lock().unwrap();
+        let terminal_mapping = state.back_terminal_mapping.lock().unwrap();
         match terminal_mapping.get(email) {
             Some(Some(file)) => file.try_clone()?,
             _ => {
@@ -141,7 +192,7 @@ async fn get_directory_items(
     use std::io::Write;
 
     let mut terminal_file = {
-        let terminal_mapping = state.terminal_mapping.lock().unwrap();
+        let terminal_mapping = state.back_terminal_mapping.lock().unwrap();
         match terminal_mapping.get(email) {
             Some(Some(file)) => file.try_clone()?,
             _ => {
@@ -214,21 +265,21 @@ async fn get_directory_items(
             continue;
         }
 
-        if filename.starts_with('.')
-            && !matches!(
-                filename.as_str(),
-                ".env" | ".gitignore" | ".dockerignore" | ".editorconfig"
-            )
-        {
-            continue;
-        }
+        // if filename.starts_with('.')
+        //     && !matches!(
+        //         filename.as_str(),
+        //         ".env" | ".gitignore" | ".dockerignore" | ".editorconfig"
+        //     )
+        // {
+        //     continue;
+        // }
 
-        if matches!(
-            filename.as_str(),
-            "node_modules" | ".git" | "__pycache__" | ".cache"
-        ) {
-            continue;
-        }
+        // if matches!(
+        //     filename.as_str(),
+        //     "node_modules" | ".git" | "__pycache__" | ".cache"
+        // ) {
+        //     continue;
+        // }
 
         let is_dir = permissions.starts_with('d');
 
@@ -333,7 +384,7 @@ pub async fn read_terminal_output(
     state: AppState,
 ) -> Result<String, std::io::Error> {
     let master_file = {
-        let terminal_guard = state.terminal_mapping.lock().unwrap();
+        let terminal_guard = state.back_terminal_mapping.lock().unwrap();
         match terminal_guard.get(&email) {
             Some(Some(file)) => file.try_clone().map_err(|e| {
                 println!("Failed to clone terminal file for {}: {}", email, e);
@@ -362,7 +413,7 @@ pub async fn read_terminal_output(
             println!("Terminal session ended for {}", email);
 
             {
-                let mut terminal_guard = state.terminal_mapping.lock().unwrap();
+                let mut terminal_guard = state.back_terminal_mapping.lock().unwrap();
                 terminal_guard.remove(&email);
             }
             Err(std::io::Error::new(

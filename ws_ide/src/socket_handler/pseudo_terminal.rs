@@ -5,6 +5,7 @@ use nix::sys::termios::{
 };
 use socketioxide::extract::SocketRef;
 
+use std::fs::File;
 use std::os::unix::io::FromRawFd;
 use std::process::{Command, Stdio};
 use tokio::io::AsyncReadExt;
@@ -223,6 +224,99 @@ pub async fn pseudo_terminal(
             .emit("terminal_closed", "Docker process terminated")
             .ok();
     });
+
+    pseudo_back_terminal(state, email).await?;
+
+    Ok(())
+}
+
+pub async fn pseudo_back_terminal(state: AppState, email: String) -> Result<(), std::io::Error> {
+    let winsize = Winsize {
+        ws_row: 24,
+        ws_col: 80,
+        ws_xpixel: 0,
+        ws_ypixel: 0,
+    };
+
+    let docker_container_id = state
+        .docker_container_id
+        .lock()
+        .unwrap()
+        .get(&email)
+        .cloned();
+    if docker_container_id.is_none() {
+        eprintln!("No Docker container found for email: {}", email);
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "Docker container not found",
+        ));
+    }
+
+    let container_id = docker_container_id.clone().flatten().ok_or_else(|| {
+        std::io::Error::new(std::io::ErrorKind::InvalidInput, "Missing container ID")
+    })?;
+
+    let pty = openpty(Some(&winsize), None).map_err(|e| {
+        eprintln!("Failed to open PTY: {}", e);
+        std::io::Error::new(std::io::ErrorKind::Other, e)
+    })?;
+
+    let mut termios = termios::tcgetattr(pty.slave).map_err(|e| {
+        eprintln!("Failed to get termios: {}", e);
+        std::io::Error::new(std::io::ErrorKind::Other, e)
+    })?;
+
+    termios.input_flags.remove(
+        InputFlags::ICRNL
+            | InputFlags::IXON
+            | InputFlags::ISTRIP
+            | InputFlags::IGNCR
+            | InputFlags::INLCR,
+    );
+    termios.output_flags.remove(OutputFlags::OPOST);
+    termios
+        .local_flags
+        .remove(LocalFlags::ECHO | LocalFlags::ICANON | LocalFlags::ISIG | LocalFlags::IEXTEN);
+
+    termios.control_chars[SpecialCharacterIndices::VMIN as usize] = 1;
+    termios.control_chars[SpecialCharacterIndices::VTIME as usize] = 0;
+
+    termios::tcsetattr(pty.slave, SetArg::TCSANOW, &termios).map_err(|e| {
+        eprintln!("Failed to set termios: {}", e);
+        std::io::Error::new(std::io::ErrorKind::Other, e)
+    })?;
+
+    // Docker exec process
+    let shell_command = "/bin/bash";
+    let mut docker_command = Command::new("docker");
+    docker_command
+        .arg("exec")
+        .arg("-it")
+        .arg(container_id)
+        .env("TERM", "xterm-256color")
+        .env("COLORTERM", "truecolor")
+        .env("LC_ALL", "C.UTF-8")
+        .arg(shell_command)
+        .stdin(unsafe { Stdio::from_raw_fd(libc::dup(pty.slave)) })
+        .stdout(unsafe { Stdio::from_raw_fd(libc::dup(pty.slave)) })
+        .stderr(unsafe { Stdio::from_raw_fd(libc::dup(pty.slave)) });
+
+    match docker_command.spawn() {
+        Ok(_) => {
+            println!("Back terminal process started for {}", email);
+        }
+        Err(e) => {
+            eprintln!("Failed to spawn docker exec for back terminal: {}", e);
+            return Err(e);
+        }
+    }
+
+    let master = unsafe { File::from_raw_fd(libc::dup(pty.master)) };
+
+    {
+        let mut back_terminal_guard = state.back_terminal_mapping.lock().unwrap();
+        back_terminal_guard.insert(email, Some(master));
+    }
 
     Ok(())
 }

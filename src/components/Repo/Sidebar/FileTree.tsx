@@ -24,6 +24,8 @@ const FileTree: React.FC<FileTreeProps> = ({
     new Set(["/", path]) // Auto-expand root and current path
   );
 
+  console.log("FileTree structure:", structure);    
+
   const toggleFolder = (folderPath: string) => {
     setExpandedFolders((prev) => {
       const newExpandedFolders = new Set(prev);
@@ -275,10 +277,10 @@ const FileTree: React.FC<FileTreeProps> = ({
       {sortedDirectories.length === 0 && sortedFiles.length === 0 && (
         <div className="flex flex-col items-center justify-center py-6 px-4 text-center 
                        bg-zinc-900/30 rounded-xl border border-zinc-800/50 mt-2">
-          <div className="w-10 h-10 rounded-lg bg-zinc-800/50 flex items-center justify-center mb-2">
+          {/* <div className="w-10 h-10 rounded-lg bg-zinc-800/50 flex items-center justify-center mb-2">
             <FaFolder className="text-zinc-600 w-5 h-5" />
           </div>
-          <p className="text-zinc-500 text-sm font-medium">Directory is empty</p>
+          <p className="text-zinc-500 text-sm font-medium">Directory is empty</p> */}
           <p className="text-zinc-600 text-xs mt-0.5">No files or folders to display</p>
         </div>
       )}

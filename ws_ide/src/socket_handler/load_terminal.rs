@@ -2,6 +2,7 @@ use bollard::container::StartContainerOptions;
 use bollard::Docker;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use socketioxide::{extract::SocketRef, socket::Sid};
+use std::option::Option;
 
 use crate::{
     docker_vm::create_container::create_container, entities::profile,
@@ -64,7 +65,12 @@ pub async fn load_terminal(s: &SocketRef, id: Sid, state: AppState, email: Strin
                             ),
                         )
                         .ok();
-
+                        state
+                            .docker_container_id
+                            .lock()
+                            .unwrap()
+                            .insert(email.clone(), docker_container_id.clone());                    
+                                                            
                         match pseudo_terminal(
                             &s,
                             docker_container_id.clone(),
@@ -100,6 +106,12 @@ pub async fn load_terminal(s: &SocketRef, id: Sid, state: AppState, email: Strin
                             ),
                         )
                         .ok();
+                        // state
+                        //     .docker_container_id
+                        //     .lock()
+                        //     .unwrap()
+                        //     .insert
+                           
 
                         match pseudo_terminal(
                             s,

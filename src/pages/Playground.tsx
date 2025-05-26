@@ -7,6 +7,7 @@ import { SidebarTabs } from "@/utils/types/types";
 import apiClient from "@/utils/apiClient";
 import { getAccessTokenFromLocalStorage } from "@/utils/getAccessTokenFromLocalStorage";
 import socket from "@/utils/Socket";
+import CodeEditor from "@/components/Repo/CodeEditor";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -166,6 +167,13 @@ const Playground = () => {
     [activeSidebarTab]
   );
 
+  const createTemplate = () => {
+    socket.emit("create_repo", {
+      email: userProfile?.email,
+      project_name: projectName.current?.value,
+    });
+  };
+
   useEffect(() => {
     updateFilePath();
   }, [pwd, selectedFile, updateFilePath]);
@@ -208,16 +216,18 @@ const Playground = () => {
   }, [fetchRepoData, pwd]);
 
   return (
-    <div className="flex flex-row w-full h-full">
-      <div className="relative h-full flex border-t border-zinc-900">
-        <SideBar
-          toggleFullScreen={toggleFullScreen}
-          isFullScreen={isFullScreen}
-          isExplorerVisible={isExplorerVisible}
-          handleSidebarTabSwitch={(tab: SidebarTabs) =>
-            handleSidebarTabSwitch(tab)
-          }
-        />
+    <div className="flex flex-col w-full h-full">
+      <div className=" h-full flex">
+        <div className="relative">
+          <SideBar
+            toggleFullScreen={toggleFullScreen}
+            isFullScreen={isFullScreen}
+            isExplorerVisible={isExplorerVisible}
+            handleSidebarTabSwitch={(tab: SidebarTabs) =>
+              handleSidebarTabSwitch(tab)
+            }
+          />
+        </div>
         <div
           className={`transition-transform duration-300 ease-in-out flex-shrink-0 bg-zinc-900 border-r border-zinc-800 ${
             isExplorerVisible ? "translate-x-0" : "-translate-x-full"
@@ -227,7 +237,7 @@ const Playground = () => {
           {isExplorerVisible && (
             <Explorer
               projectName={projectName}
-              createTemplate={getFiles}
+              createTemplate={createTemplate}
               fileStructure={fileStructure}
               explorerloadingStatus={explorerloadingStatus}
               handleSelect={handleSelect}
@@ -235,7 +245,12 @@ const Playground = () => {
             />
           )}
         </div>
+        <CodeEditor
+          selectedFileAbsolutePath={selectedFileAbsolutePath}
+          selectedFile={selectedFile}
+        />
       </div>
+
       <Terminal
         openRepo={openRepo}
         explorerloadingStatus={explorerloadingStatus}
