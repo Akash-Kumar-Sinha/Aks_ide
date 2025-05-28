@@ -8,6 +8,7 @@ use axum::{
 use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 use socket_handler::{
+    file_events::{get_file_data, save_file_data},
     load_terminal::load_terminal,
     repo_events::{create_new_project, get_repo_structure},
     terminal_events::{handle_close_terminal, handle_terminal_input, handle_terminal_resize},
@@ -66,6 +67,19 @@ struct TerminalResizePayload {
 #[derive(Debug, Clone, Deserialize)]
 struct CloseTerminalPayload {
     email: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct FileContentPayload {
+    email: String,
+    path: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct SaveFileContentPayload {
+    email: String,
+    path: String,
+    content: String,
 }
 
 #[tokio::main]
@@ -182,18 +196,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         });
 
-        // And your socket handler should be:
         let app_state_inner = app_state_clone.clone();
         s.on("create_repo", {
             let app_state = app_state_inner.clone();
-            println!("create_repo handler registered");     
+            println!("create_repo handler registered");
             move |s: SocketRef,
                   Data::<CreateProjectPayload>(payload): Data<CreateProjectPayload>| {
                 let app_state = app_state.clone();
 
                 Box::pin(async move {
                     match create_new_project(s, app_state, payload).await {
-                        // Pass s directly, not &s
                         Ok(_) => {
                             println!("✅ Project created successfully.");
                         }
@@ -205,8 +217,45 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         });
 
-        static HANDLER_CALL_COUNT: std::sync::atomic::AtomicUsize =
-            std::sync::atomic::AtomicUsize::new(0);
+        let app_state_inner = app_state_clone.clone();
+        s.on("get_files_data", {
+            let app_state = app_state_inner.clone();
+            println!("get_files_data handler registered");
+            move |s: SocketRef, Data::<FileContentPayload>(payload): Data<FileContentPayload>| {
+                let app_state = app_state.clone();
+
+                Box::pin(async move {
+                    match get_file_data(s, app_state, payload).await {
+                        Ok(_) => {
+                            println!("✅ Project created successfully.");
+                        }
+                        Err(e) => {
+                            eprintln!("❌ Failed to create project: {}", e);
+                        }
+                    }
+                })
+            }
+        });
+
+        let app_state_inner = app_state_clone.clone();
+        s.on("save_data", {
+            let app_state = app_state_inner.clone();
+            println!("save_data handler registered");
+            move |s: SocketRef, Data::<SaveFileContentPayload>(payload): Data<SaveFileContentPayload>| {
+                let app_state = app_state.clone();
+
+                Box::pin(async move {
+                    match save_file_data(s, app_state, payload).await {
+                        Ok(_) => {
+                            println!("✅ save_file_data  successfully.");
+                        }
+                        Err(e) => {
+                            eprintln!("❌ Failed to save_file_data project: {}", e);
+                        }
+                    }
+                })
+            }
+        });
 
         let app_state_inner = app_state_clone.clone();
         s.on("close_terminal", {
@@ -214,9 +263,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             move |s: SocketRef,
                   Data::<CloseTerminalPayload>(payload): Data<CloseTerminalPayload>| {
                 let app_state = app_state.clone();
-                let call_count =
-                    HANDLER_CALL_COUNT.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1;
-                println!("close_terminal handler called {} times", call_count);
 
                 Box::pin(async move {
                     println!("=== CLOSE TERMINAL DEBUG ===");

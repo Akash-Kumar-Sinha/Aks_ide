@@ -7,15 +7,11 @@ import { SidebarTabs } from "@/utils/types/types";
 import Document from "./Document";
 import GitBranch from "./GitBranch";
 import { FolderOpen, Plus, Search, RefreshCw } from "lucide-react";
+import { FileStructure } from "@/pages/Playground";
 
 interface RepoStructureResponse {
   current_directory?: string;
   structure?: FileStructure;
-}
-
-interface FileStructure {
-  [key: string]: FileStructure | string[] | undefined;
-  _files?: string[];
 }
 
 interface ExplorerProps {
@@ -24,6 +20,7 @@ interface ExplorerProps {
   projectName: React.RefObject<HTMLInputElement>;
   explorerloadingStatus: boolean;
   handleSelect: (path: string) => void;
+  setSelectedFileAbsolutePath: (absolutePath: string) => void;
   activeSidebarTab: SidebarTabs;
   onRefresh?: () => void;
 }
@@ -34,6 +31,7 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
     createTemplate,
     projectName,
     explorerloadingStatus,
+    setSelectedFileAbsolutePath,
     handleSelect,
     activeSidebarTab,
     onRefresh,
@@ -57,7 +55,8 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
           const keys = Object.keys(fileStructure);
           const hasValidStructure = keys.some(
             (key) =>
-              key === "_files" ||
+              // Check for file entries (string values) or directory entries (object values)
+              typeof fileStructure[key] === "string" ||
               (typeof fileStructure[key] === "object" &&
                 fileStructure[key] !== null)
           );
@@ -74,10 +73,11 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
       }
     };
 
-    const handleFileSelect = (path: string, isFile: boolean) => {
-      if (isFile) {
-        handleSelect(path);
-      }
+    const handleFileSelect = (fileName: string, absolutePath: string) => {
+      // Use the absolute path for selection
+      setSelectedFileAbsolutePath(absolutePath);
+      handleSelect(fileName);
+      
     };
 
     const getCurrentDirectory = (): string => {

@@ -1,86 +1,123 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Editor from "@monaco-editor/react";
 import * as monaco from "monaco-editor";
-
 import { socket } from "@/utils/Socket";
 import Loading from "../Loading";
-import apiClient from "@/utils/apiClient";
-import { getAccessTokenFromLocalStorage } from "@/utils/getAccessTokenFromLocalStorage";
-
-const SERVER_URL = import.meta.env.VITE_SERVER_URL;
+import useUserProfile from "@/utils/useUserProfile";
 
 interface CodeProps {
   selectedFileAbsolutePath: string;
   selectedFile: string;
+  onSaveStatusChange: (status: "idle" | "saving" | "saved" | "error") => void;
 }
 
 const CodeEditor: React.FC<CodeProps> = React.memo(
-  ({ selectedFileAbsolutePath, selectedFile }) => {
+  ({ selectedFileAbsolutePath, selectedFile, onSaveStatusChange }) => {
     const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
-    const [codeContent, setCodeContent] = useState<string>("");
-    const [fetchCodeContent, setFetchCodeContent] = useState<string>("");
-    const [language, setLanguage] = useState<string>("javascript");
-    const [contentLoading, setContentLoading] = useState<boolean>(false);
-
-    const isSaved = codeContent === fetchCodeContent;
+    const { userProfile } = useUserProfile();
+    const [codeContent, setCodeContent] = useState("");
+    const [language, setLanguage] = useState("javascript");
+    const [isLoadingFile, setIsLoadingFile] = useState(false);
+    const currentFilePathRef = useRef<string>("");
+    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     function handleEditorDidMount(editor: monaco.editor.IStandaloneCodeEditor) {
       editorRef.current = editor;
-      console.log("Editor mounted");
     }
 
     const handleEditorChange = (value: string | undefined) => {
-      if (value) {
-        setCodeContent(value);
-        if (!isSaved) {
-          socket.emit("write_code", {
-            filePath: selectedFileAbsolutePath,
-            code: value,
-          });
-        }
+      if (
+        isLoadingFile ||
+        selectedFileAbsolutePath !== currentFilePathRef.current
+      ) {
+        return;
       }
+
+      if (value === undefined || value === null) {
+        return;
+      }
+
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      onSaveStatusChange("saving");
+
+      saveTimeoutRef.current = setTimeout(() => {
+        socket.emit("save_data", {
+          email: userProfile?.email,
+          path: selectedFileAbsolutePath,
+          content: value,
+        });
+      }, 500);
     };
 
-    const getFileContent = useCallback(async () => {
-      if (!selectedFileAbsolutePath) return;
+    const getFileContent = useCallback(
+      (data: string) => {
+        setCodeContent(data);
+        setIsLoadingFile(false);
+        currentFilePathRef.current = selectedFileAbsolutePath;
+      },
+      [selectedFileAbsolutePath]
+    );
 
-      setContentLoading(true);
-      console.log("Fetching file content...");
+    const handleFileSaved = useCallback(
+      (message: string) => {
+        onSaveStatusChange("saved");
+        console.log("File saved:", message);
 
-      try {
-        const accessToken = getAccessTokenFromLocalStorage();
-        const response = await apiClient.get(`${SERVER_URL}/repo/content`, {
-          params: { filePath: selectedFileAbsolutePath },
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
-        console.log("response", response.data.content);
-        if (response.status === 200) {
-          const cleanContent = response.data.content
-            .replace(/^\uFEFF/, "")
-            // eslint-disable-next-line no-control-regex
-            .replace(/[^\x20-\x7E\x0A\x0D]/g, "")
-            .trim();
-          setFetchCodeContent(cleanContent);
-          setCodeContent(cleanContent);
+        setTimeout(() => {
+          onSaveStatusChange("idle");
+        }, 2000);
+      },
+      [onSaveStatusChange]
+    );
+
+    const handleFileError = useCallback(
+      (error: string) => {
+        onSaveStatusChange("error");
+        console.error("File save error:", error);
+
+        setTimeout(() => {
+          onSaveStatusChange("idle");
+        }, 3000);
+      },
+      [onSaveStatusChange]
+    );
+
+    useEffect(() => {
+      socket.on("files_data", getFileContent);
+      socket.on("file_saved", handleFileSaved);
+      socket.on("file_error", handleFileError);
+
+      return () => {
+        socket.off("files_data", getFileContent);
+        socket.off("file_saved", handleFileSaved);
+        socket.off("file_error", handleFileError);
+
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
         }
-      } catch (error) {
-        console.error("Error fetching file content:", error);
-      } finally {
-        setContentLoading(false);
-      }
-    }, [selectedFileAbsolutePath]);
+      };
+    }, [getFileContent, handleFileSaved, handleFileError]);
 
     useEffect(() => {
-      getFileContent();
-    }, [selectedFileAbsolutePath, getFileContent]);
+      if (selectedFileAbsolutePath && userProfile) {
+        setIsLoadingFile(true);
+        setCodeContent("");
+        onSaveStatusChange("idle");
 
-    useEffect(() => {
-      if (fetchCodeContent) {
-        setCodeContent(fetchCodeContent);
+        socket.emit("get_files_data", {
+          email: userProfile.email,
+          path: selectedFileAbsolutePath,
+        });
       }
-    }, [fetchCodeContent]);
+    }, [
+      selectedFileAbsolutePath,
+      userProfile,
+      userProfile?.email,
+      onSaveStatusChange,
+    ]);
 
     useEffect(() => {
       if (selectedFileAbsolutePath) {
@@ -101,42 +138,31 @@ const CodeEditor: React.FC<CodeProps> = React.memo(
 
     return (
       <>
-        {contentLoading ? (
-          <div className="h-full w-full flex flex-col justify-center items-center bg-zinc-950">
-            <Loading size={70} />
-            <p className="mt-4 text-zinc-300 text-lg">Opening file...</p>
+        {selectedFile ? (
+          <div className="h-full w-full">
+            <Editor
+              height="100%"
+              language={language}
+              value={codeContent}
+              onMount={handleEditorDidMount}
+              onChange={handleEditorChange}
+              theme="vs-dark"
+              loading={<Loading />}
+              options={{
+                fontSize: 14,
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+              }}
+            />
           </div>
         ) : (
-          <>
-            {selectedFile ? (
-              <div className="w-full h-full bg-zinc-900 border border-zinc-600 rounded-lg overflow-hidden">
-                <Editor
-                  defaultLanguage={language}
-                  theme="vs-dark"
-                  onMount={handleEditorDidMount}
-                  onChange={handleEditorChange}
-                  value={codeContent}
-                  options={{
-                    automaticLayout: true,
-                    minimap: { enabled: false },
-                    fontSize: 14,
-                    lineNumbers: "on",
-                    scrollBeyondLastLine: false,
-                    wordWrap: "on",
-                    wrappingIndent: "same",
-                  }}
-                  loading={<Loading />}
-                />
-              </div>
-            ) : (
-              <div className="h-full w-full flex flex-col text-center justify-center items-center text-yellow-400">
-                <h1 className="lg:text-3xl font-semibold">Aks IDE</h1>
-                <p className="lg:text-lg mt-4 text-center">
-                  Select a file to begin coding
-                </p>
-              </div>
-            )}
-          </>
+          <div className="flex items-center justify-center h-full w-full bg-gray-900 text-white">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold mb-4">Aks IDE</h2>
+              <p className="text-gray-400">Select a file to begin coding</p>
+            </div>
+          </div>
         )}
       </>
     );

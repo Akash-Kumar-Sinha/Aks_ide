@@ -286,7 +286,6 @@ pub async fn pseudo_back_terminal(state: AppState, email: String) -> Result<(), 
         std::io::Error::new(std::io::ErrorKind::Other, e)
     })?;
 
-    // Docker exec process
     let shell_command = "/bin/bash";
     let mut docker_command = Command::new("docker");
     docker_command

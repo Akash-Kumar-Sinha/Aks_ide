@@ -6,10 +6,10 @@ use socketioxide::extract::SocketRef;
 use std::boxed::Box;
 use std::collections::HashMap;
 use std::future::Future;
+use std::io::Write;
 use std::pin::Pin;
 use tokio::io::AsyncReadExt;
 use tokio::time::{timeout, Duration};
-    use std::io::Write;
 
 pub async fn get_repo_structure(
     s: &SocketRef,
@@ -65,15 +65,14 @@ pub async fn get_repo_structure(
     Ok(())
 }
 
-
 pub async fn create_new_project(
     s: SocketRef,
     state: AppState,
     payload: CreateProjectPayload,
 ) -> Result<(), std::io::Error> {
     let email = payload.email.clone();
-    println!("Creating new project for email: {}", email);  
-    // Clone terminal handle safely
+    println!("Creating new project for email: {}", email);
+
     let mut terminal_file = {
         let terminal_mapping = state.back_terminal_mapping.lock().unwrap();
         match terminal_mapping.get(&email) {
@@ -85,7 +84,6 @@ pub async fn create_new_project(
         }
     };
 
-    // Sanitize project name
     let sanitized_name = payload
         .project_name
         .chars()
@@ -99,30 +97,24 @@ pub async fn create_new_project(
         ));
     }
 
-    // Write safe shell commands
     writeln!(terminal_file, "cd /home")?;
     writeln!(terminal_file, "mkdir {}", sanitized_name)?;
 
-    // Optional: sleep to allow shell time to process commands
     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     terminal_file.flush()?;
 
-    // Emit success response back to client
     s.emit("repo_created", &payload.project_name).ok();
-    get_repo_structure(&s, state, LoadTerminalPayload { email }).await?;        
+    get_repo_structure(&s, state, LoadTerminalPayload { email }).await?;
 
     Ok(())
 }
 
-
-// Function to strip ANSI color codes from text
 fn strip_ansi_codes(text: &str) -> String {
     let ansi_regex = Regex::new(r"\x1b\[[0-9;]*m").unwrap();
     ansi_regex.replace_all(text, "").to_string()
 }
 
 async fn get_current_directory(email: &str, state: &AppState) -> Result<String, std::io::Error> {
-
     let mut terminal_file = {
         let terminal_mapping = state.back_terminal_mapping.lock().unwrap();
         match terminal_mapping.get(email) {
@@ -169,7 +161,6 @@ async fn get_current_directory(email: &str, state: &AppState) -> Result<String, 
     }
 }
 
-// FIXED: New comprehensive file tree builder with flat structure
 async fn build_comprehensive_file_tree(
     email: &str,
     state: &AppState,
@@ -183,7 +174,6 @@ async fn build_comprehensive_file_tree(
     build_directory_tree(email, state, base_path, "root", 0, 3).await
 }
 
-// FIXED: Get items in a directory using ls -la for proper file type detection
 async fn get_directory_items(
     email: &str,
     state: &AppState,
@@ -265,21 +255,12 @@ async fn get_directory_items(
             continue;
         }
 
-        // if filename.starts_with('.')
-        //     && !matches!(
-        //         filename.as_str(),
-        //         ".env" | ".gitignore" | ".dockerignore" | ".editorconfig"
-        //     )
-        // {
-        //     continue;
-        // }
-
-        // if matches!(
-        //     filename.as_str(),
-        //     "node_modules" | ".git" | "__pycache__" | ".cache"
-        // ) {
-        //     continue;
-        // }
+        if matches!(
+            filename.as_str(),
+            "node_modules" | ".git" | "__pycache__" | ".cache"
+        ) {
+            continue;
+        }
 
         let is_dir = permissions.starts_with('d');
 
@@ -296,7 +277,6 @@ async fn get_directory_items(
     Ok(items)
 }
 
-// FIXED: Build directory tree with flat structure - directories and files mixed together
 fn build_directory_tree<'a>(
     email: &'a str,
     state: &'a AppState,
@@ -329,18 +309,22 @@ fn build_directory_tree<'a>(
 
         let mut tree = HashMap::new();
         let mut directories = Vec::new();
-        let mut files = Vec::new();
+        let mut files = HashMap::new();
 
         for (name, is_dir) in items {
             if is_dir {
                 directories.push(name);
             } else {
-                files.push(name);
+                let absolute_path = format!("{}/{}", full_path, name);
+                println!("Adding file: {} to path: {}", name, absolute_path);
+                files.insert(absolute_path.clone(), name);
             }
         }
 
         directories.sort();
-        files.sort();
+
+        let mut file_entries: Vec<_> = files.into_iter().collect();
+        file_entries.sort_by(|a, b| a.1.cmp(&b.1));
 
         for subdir in directories {
             let subdir_path = format!("{}/{}", full_path, subdir);
@@ -363,16 +347,28 @@ fn build_directory_tree<'a>(
             }
         }
 
-        if !files.is_empty() {
-            let limited_files: Vec<String> = if files.clone().len() > 15 {
-                let mut limited = files.clone().into_iter().take(10).collect::<Vec<_>>();
-                limited.push(format!("... and {} more files", files.clone().len() - 10));
-                limited
+        if !file_entries.is_empty() {
+            let mut file_map = serde_json::Map::new();
+
+            let file_count = file_entries.len();
+            let display_files = if file_count > 15 {
+                let shown_files = &file_entries[..10];
+                for (abs_path, name) in shown_files {
+                    file_map.insert(abs_path.clone(), json!(name));
+                }
+                file_map.insert(
+                    "...".to_string(),
+                    json!(format!("and {} more files", file_count - 10)),
+                );
+                file_map
             } else {
-                files
+                for (abs_path, name) in file_entries {
+                    file_map.insert(abs_path, json!(name));
+                }
+                file_map
             };
 
-            tree.insert("_files".to_string(), json!(limited_files));
+            tree.insert("_files".to_string(), Value::Object(display_files));
         }
 
         Ok(tree)

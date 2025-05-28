@@ -4,103 +4,56 @@ import SideBar from "@/components/Repo/Sidebar/SideBar";
 import Explorer from "@/components/Repo/Sidebar/Explorer";
 import Terminal from "@/components/Repo/Terminal";
 import { SidebarTabs } from "@/utils/types/types";
-import apiClient from "@/utils/apiClient";
-import { getAccessTokenFromLocalStorage } from "@/utils/getAccessTokenFromLocalStorage";
 import socket from "@/utils/Socket";
 import CodeEditor from "@/components/Repo/CodeEditor";
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL;
+export type FileStructure = {
+  [key: string]: FileStructure | { [absolutePath: string]: string } | string;
+};
+
+export type SaveStatus = "idle" | "saving" | "saved" | "error";
 
 const Playground = () => {
   const { userProfile } = useUserProfile();
-  const [fileStructure, setFileStructure] = useState<
-    Record<string, unknown | null>
-  >({});
+  const [fileStructure, setFileStructure] = useState<FileStructure>({});
   const [explorerloadingStatus, setExplorerLoadingStatus] = useState(false);
   const [selectedFile, setSelectedFile] = useState("");
   const [selectedFileAbsolutePath, setSelectedFileAbsolutePath] = useState("");
-  const [pwd, setPwd] = useState<string>("");
   const [isExplorerVisible, setExplorerVisible] = useState(true);
   const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
   const [activeSidebarTab, setActiveSidebarTab] = useState<SidebarTabs>(
     SidebarTabs.EXPLORER
   );
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
 
   const handleSelect = useCallback((path: string) => {
     setSelectedFile(path);
     console.log(path);
   }, []);
 
+  const handleSaveStatusChange = useCallback(
+    (status: "idle" | "saving" | "saved" | "error") => {
+      setSaveStatus(status);
+    },
+    []
+  );
+
   const projectName = useRef<HTMLInputElement>(null);
-
-  const getFiles = useCallback(async () => {
-    console.log("getFiles called");
-    if (!userProfile || !projectName.current) return;
-    const name = projectName.current.value;
-    if (!name) {
-      console.log("Repository name is missing.");
-      return;
-    }
-
-    try {
-      const accessToken = getAccessTokenFromLocalStorage();
-      const response = await apiClient.post(
-        `${SERVER_URL}/repo/files`,
-        { name },
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
-      );
-      if (response.status === 200) {
-        setFileStructure(response.data.fileStructure);
-      }
-    } catch (err) {
-      console.error("Error fetching file structure:", err);
-    }
-  }, [userProfile]);
-
-  const fetchRepoData = useCallback(async () => {
-    console.log("fetchRepoData called");
-    if (pwd) {
-      setExplorerLoadingStatus(true);
-
-      try {
-        const accessToken = getAccessTokenFromLocalStorage();
-        const response = await apiClient.get(`${SERVER_URL}/repo/open_repo`, {
-          params: { pwd },
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
-
-        if (response.status === 200) {
-          setFileStructure(response.data.fileStructure);
-        }
-      } catch (error) {
-        console.error("Error opening repository:", error);
-      } finally {
-        setExplorerLoadingStatus(false);
-      }
-    }
-  }, [pwd]);
 
   const openRepo = useCallback(() => {
     console.log("openRepo called");
     if (!userProfile?.email) return;
 
     setExplorerLoadingStatus(true);
-    setFileStructure({}); // Clear existing structure
+    setFileStructure({});
 
-    // Emit the socket event to get repo structure
     socket.emit("repo_tree", { email: userProfile.email });
   }, [userProfile?.email]);
 
   useEffect(() => {
     if (!userProfile?.email) return;
 
-    const handleRepoStructure = (data: Record<string, unknown>) => {
+    const handleRepoStructure = (data: FileStructure) => {
       console.log("Received repo structure:", data);
       setFileStructure(data);
       setExplorerLoadingStatus(false);
@@ -111,22 +64,14 @@ const Playground = () => {
       setExplorerLoadingStatus(false);
     };
 
-    // Set up socket listeners
     socket.on("repo_structure", handleRepoStructure);
     socket.on("terminal_error", handleTerminalError);
 
-    // Clean up listeners
     return () => {
       socket.off("repo_structure", handleRepoStructure);
       socket.off("terminal_error", handleTerminalError);
     };
   }, [userProfile?.email]);
-
-  const updateFilePath = useCallback(() => {
-    if (pwd && selectedFile) {
-      setSelectedFileAbsolutePath(`${pwd}/${selectedFile}`);
-    }
-  }, [pwd, selectedFile]);
 
   const handleSidebarTabSwitch = useCallback(
     (tab: SidebarTabs) => {
@@ -174,10 +119,6 @@ const Playground = () => {
     });
   };
 
-  useEffect(() => {
-    updateFilePath();
-  }, [pwd, selectedFile, updateFilePath]);
-
   const toggleFullScreen = useCallback(() => {
     if (!isFullScreen) {
       document.documentElement.requestFullscreen().catch((err) => {
@@ -209,14 +150,10 @@ const Playground = () => {
     };
   }, []);
 
-  useEffect(() => {
-    if (pwd) {
-      fetchRepoData();
-    }
-  }, [fetchRepoData, pwd]);
+  console.log("selectedFileAbsolutePath: ", selectedFileAbsolutePath);
 
   return (
-    <div className="flex flex-col w-full h-full">
+    <div className="flex flex-col w-full h-full relative">
       <div className=" h-full flex">
         <div className="relative">
           <SideBar
@@ -242,16 +179,19 @@ const Playground = () => {
               explorerloadingStatus={explorerloadingStatus}
               handleSelect={handleSelect}
               activeSidebarTab={activeSidebarTab}
+              setSelectedFileAbsolutePath={setSelectedFileAbsolutePath}
             />
           )}
         </div>
         <CodeEditor
           selectedFileAbsolutePath={selectedFileAbsolutePath}
           selectedFile={selectedFile}
+          onSaveStatusChange={handleSaveStatusChange}
         />
       </div>
 
       <Terminal
+        saveStatus={saveStatus}
         openRepo={openRepo}
         explorerloadingStatus={explorerloadingStatus}
         selectedFile={selectedFile}

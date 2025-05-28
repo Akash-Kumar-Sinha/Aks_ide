@@ -12,12 +12,14 @@ import "@xterm/xterm/css/xterm.css";
 import { socket } from "@/utils/Socket";
 import Loading from "@/components/Loading";
 import useUserProfile from "@/utils/useUserProfile";
+import { SaveStatus } from "@/pages/Playground";
 
 interface TerminalProps {
   containerClassName?: string;
   openRepo: () => void;
   explorerloadingStatus: boolean;
   selectedFile?: string;
+  saveStatus: SaveStatus;
 }
 
 const Terminal: React.FC<TerminalProps> = ({
@@ -25,6 +27,7 @@ const Terminal: React.FC<TerminalProps> = ({
   openRepo,
   explorerloadingStatus,
   selectedFile,
+  saveStatus,
 }) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const terminalInstance = useRef<XTerminal | null>(null);
@@ -35,7 +38,6 @@ const Terminal: React.FC<TerminalProps> = ({
   const [terminalActive, setTerminalActive] = useState(false);
   const [terminalLoaded, setTerminalLoaded] = useState(false);
 
-  // Store messages that arrive before terminal is ready
   const [pendingMessages, setPendingMessages] = useState<
     Array<{
       type: "success" | "error" | "info" | "data" | "output";
@@ -88,14 +90,12 @@ const Terminal: React.FC<TerminalProps> = ({
     }
   }, [user]);
 
-  // Helper function to add message to pending or write directly
   const addMessage = useCallback(
     (
       type: "success" | "error" | "info" | "data" | "output",
       content: string
     ) => {
       if (terminalInstance.current && terminalActive) {
-        // Terminal is ready, write directly
         let formattedContent = content;
         if (type === "error") {
           formattedContent = `\r\n\x1b[31mError: ${content}\x1b[0m\r\n`;
@@ -111,7 +111,6 @@ const Terminal: React.FC<TerminalProps> = ({
           terminalInstance.current.write(new Uint8Array(content));
         }
       } else {
-        // Terminal not ready, store message and update loading message
         const message = {
           type,
           content,
@@ -120,7 +119,6 @@ const Terminal: React.FC<TerminalProps> = ({
 
         setPendingMessages((prev) => [...prev, message]);
 
-        // Update loading message based on the latest message
         if (type === "info") {
           setLoadingMessage(content);
         } else if (type === "error") {
@@ -133,7 +131,6 @@ const Terminal: React.FC<TerminalProps> = ({
     [terminalActive]
   );
 
-  // Consolidated socket event handlers
   useEffect(() => {
     const handleTerminalSuccess = (message?: string) => {
       console.log("Terminal success received", message);
@@ -195,14 +192,12 @@ const Terminal: React.FC<TerminalProps> = ({
     };
   }, [addMessage]);
 
-  // Process pending messages when terminal becomes active
   useEffect(() => {
     if (
       terminalActive &&
       terminalInstance.current &&
       pendingMessages.length > 0
     ) {
-      // Write all pending messages to the terminal
       pendingMessages.forEach((message) => {
         let formattedContent = message.content;
         if (message.type === "error") {
@@ -220,7 +215,6 @@ const Terminal: React.FC<TerminalProps> = ({
         }
       });
 
-      // Clear pending messages
       setPendingMessages([]);
       setLoadingMessage("Terminal ready");
     }
@@ -329,6 +323,26 @@ const Terminal: React.FC<TerminalProps> = ({
     }
   };
 
+  const SaveStatus = () => {
+    if (saveStatus === "idle") return null;
+
+    const statusConfig = {
+      saving: { text: "•", color: "text-blue-400", animate: "animate-pulse" },
+      saved: { text: "✓", color: "text-green-400", animate: "" },
+      error: { text: "✗", color: "text-red-400", animate: "" },
+    };
+
+    const config = statusConfig[saveStatus];
+
+    return (
+      <div
+        className={` ${config.color} ${config.animate} text-sm font-medium px-2 py-1 `}
+      >
+        {config.text}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div
@@ -379,6 +393,7 @@ const Terminal: React.FC<TerminalProps> = ({
           <div className="flex items-center gap-2">
             <TerminalIcon className="w-4 h-4 text-purple-500" />
             <span className="text-zinc-200 font-medium text-sm">Terminal</span>
+            <SaveStatus />
           </div>
 
           {selectedFile && (
