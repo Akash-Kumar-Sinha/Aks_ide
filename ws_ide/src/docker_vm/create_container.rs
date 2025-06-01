@@ -13,14 +13,10 @@ const IMAGE: &str = "ubuntu:20.04";
 
 pub async fn create_container(
     s: &SocketRef,
-    id: Sid,
+    _id: Sid,
     state: AppState,
     email: String,
 ) -> Option<String> {
-    println!(
-        "🔧 Creating container for user: {} with socket ID: {:?}",
-        email, id
-    );
 
     let docker = match Docker::connect_with_socket_defaults() {
         Ok(client) => client,
@@ -124,7 +120,6 @@ pub async fn create_container(
         .await
     {
         Ok(_) => {
-            println!("Container started successfully: {}", container.id);
             s.emit(
                 "terminal_info",
                 "Container started successfully. Updating user profile",
@@ -153,7 +148,6 @@ pub async fn create_container(
 
             match model.update(&*state.db).await {
                 Ok(_) => {
-                    println!("Updated user's container_id in database");
                     s.emit(
                         "terminal_info",
                         "Profile updated. Container ready for terminal session.",

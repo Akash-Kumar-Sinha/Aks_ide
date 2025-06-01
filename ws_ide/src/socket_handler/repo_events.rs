@@ -17,7 +17,6 @@ pub async fn get_repo_structure(
     payload: LoadTerminalPayload,
 ) -> Result<(), std::io::Error> {
     let email = payload.email.clone();
-    println!("Getting repo structure for email: {}", email);
 
     let pwd = match get_current_directory(&email, &state).await {
         Ok(dir) => {
@@ -37,18 +36,12 @@ pub async fn get_repo_structure(
         }
     };
 
-    println!("Current working directory for {}: {}", email, pwd);
-
     let mut repo_info = HashMap::new();
     repo_info.insert("current_directory".to_string(), json!(pwd));
 
     match build_comprehensive_file_tree(&email, &state, &pwd).await {
         Ok(tree) => {
             repo_info.insert("structure".to_string(), json!(tree));
-            println!(
-                "Built comprehensive file tree for {}: {:#?}",
-                email, repo_info
-            );
             s.emit("repo_structure", &repo_info).ok();
         }
         Err(e) => {
@@ -71,7 +64,6 @@ pub async fn create_new_project(
     payload: CreateProjectPayload,
 ) -> Result<(), std::io::Error> {
     let email = payload.email.clone();
-    println!("Creating new project for email: {}", email);
 
     let mut terminal_file = {
         let terminal_mapping = state.back_terminal_mapping.lock().unwrap();
@@ -138,18 +130,13 @@ async fn get_current_directory(email: &str, state: &AppState) -> Result<String, 
     .await
     {
         Ok(Ok(output)) => {
-            println!("Raw pwd output for {}: {:?}", email, output);
-
             let clean_output = strip_ansi_codes(&output);
-            println!("Clean pwd output for {}: {:?}", email, clean_output);
 
             let lines: Vec<&str> = clean_output
                 .lines()
                 .filter(|l| !l.trim().is_empty() && !l.contains("pwd"))
                 .filter(|l| !l.starts_with("root@") && !l.contains("#"))
                 .collect();
-
-            println!("Filtered pwd lines for {}: {:?}", email, lines);
 
             if let Some(pwd_line) = lines.first() {
                 Ok(pwd_line.trim().to_string())
@@ -166,11 +153,6 @@ async fn build_comprehensive_file_tree(
     state: &AppState,
     base_path: &str,
 ) -> Result<HashMap<String, Value>, std::io::Error> {
-    println!(
-        "Building comprehensive file tree for {}: base_path={}",
-        email, base_path
-    );
-
     build_directory_tree(email, state, base_path, "root", 0, 3).await
 }
 
@@ -193,10 +175,6 @@ async fn get_directory_items(
     };
 
     let ls_command = format!("ls -la --color=never '{}' 2>/dev/null | tail -n +2\n", path);
-    println!(
-        "Getting directory items with command: {}",
-        ls_command.trim()
-    );
 
     terminal_file.write_all(ls_command.as_bytes())?;
     terminal_file.flush()?;
@@ -209,22 +187,16 @@ async fn get_directory_items(
     )
     .await
     {
-        Ok(Ok(output)) => {
-            println!("Raw ls -la output: {:?}", output);
-            output
-        }
+        Ok(Ok(output)) => output,
         Ok(Err(e)) => {
-            println!("Error reading directory items: {}", e);
             return Ok(Vec::new());
         }
         Err(_) => {
-            println!("Timeout reading directory items");
             return Ok(Vec::new());
         }
     };
 
     let clean_output = strip_ansi_codes(&output);
-    println!("Clean directory listing: {:?}", clean_output);
 
     let mut items = Vec::new();
     let lines: Vec<&str> = clean_output
@@ -233,8 +205,6 @@ async fn get_directory_items(
         .filter(|l| !l.contains("ls -la") && !l.starts_with("root@") && !l.contains("#"))
         .filter(|l| !l.starts_with("total "))
         .collect();
-
-    println!("Filtered directory lines: {:?}", lines);
 
     for line in lines {
         let line = line.trim();
@@ -264,16 +234,9 @@ async fn get_directory_items(
 
         let is_dir = permissions.starts_with('d');
 
-        println!(
-            "Parsed item: {} -> {} (permissions: {})",
-            filename,
-            if is_dir { "DIR" } else { "FILE" },
-            permissions
-        );
         items.push((filename, is_dir));
     }
 
-    println!("Final items list: {:?}", items);
     Ok(items)
 }
 
@@ -287,17 +250,8 @@ fn build_directory_tree<'a>(
 ) -> Pin<Box<dyn Future<Output = Result<HashMap<String, Value>, std::io::Error>> + Send + 'a>> {
     Box::pin(async move {
         if current_depth > max_depth {
-            println!(
-                "Reached max depth {} for directory: {}",
-                max_depth, dir_name
-            );
             return Ok(HashMap::new());
         }
-
-        println!(
-            "Building directory tree for: {} at depth {}",
-            dir_name, current_depth
-        );
 
         let items = match get_directory_items(email, state, full_path).await {
             Ok(items) => items,
@@ -316,7 +270,6 @@ fn build_directory_tree<'a>(
                 directories.push(name);
             } else {
                 let absolute_path = format!("{}/{}", full_path, name);
-                println!("Adding file: {} to path: {}", name, absolute_path);
                 files.insert(absolute_path.clone(), name);
             }
         }
@@ -406,8 +359,6 @@ pub async fn read_terminal_output(
 
     match reader.read(&mut buffer).await {
         Ok(0) => {
-            println!("Terminal session ended for {}", email);
-
             {
                 let mut terminal_guard = state.back_terminal_mapping.lock().unwrap();
                 terminal_guard.remove(&email);
@@ -434,7 +385,7 @@ pub async fn read_terminal_output(
                     .map(|b| format!("\\x{:02x}", b))
                     .collect::<Vec<String>>()
                     .join("");
-                println!("Received binary data for {}: {}", email, hex_data);
+
                 Ok(hex_data)
             }
         }

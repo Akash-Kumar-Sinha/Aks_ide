@@ -85,11 +85,6 @@ pub async fn handle_terminal_resize(
                 return Err(std::io::Error::new(std::io::ErrorKind::Other, error_msg));
             }
         }
-
-        println!(
-            "Terminal resized to {}x{} for {}",
-            data.cols, data.rows, email
-        );
     } else {
         let error_msg = format!("No terminal found for email: {}", email);
 

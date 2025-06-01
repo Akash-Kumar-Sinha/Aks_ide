@@ -91,7 +91,6 @@ pub async fn load_terminal(s: &SocketRef, id: Sid, state: AppState, email: Strin
                     }
                 }
                 None => {
-                    eprintln!("User `{}` has no container ID assigned", email);
                     s.emit("terminal_info", "Creating new development environment")
                         .ok();
 

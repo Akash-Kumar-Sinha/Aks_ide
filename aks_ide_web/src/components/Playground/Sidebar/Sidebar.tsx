@@ -1,13 +1,8 @@
 import { useRef, useState } from "react";
 
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "../../ui/Tabs/Tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../ui/Tabs/Tabs";
 import { MdFullscreen, MdFullscreenExit } from "react-icons/md";
-import { FaGithub } from "react-icons/fa";
+import { FaGithub, FaStickyNote } from "react-icons/fa";
 import { ChevronLeft, ChevronRight, FoldersIcon } from "lucide-react";
 import { Avatar } from "../../ui/Avatar/Avatar";
 import Explorer from "./SidbarStructure/Explorer";
@@ -20,6 +15,7 @@ import socket from "../../../utils/Socket";
 import Auth from "../../../pages/Auth";
 import Profile from "./SidbarStructure/Profile";
 import useTheme from "../../ui/lib/useTheme";
+import Note from "./SidbarStructure/Note";
 
 interface SidebarProps {
   toggleFullScreen: () => void;
@@ -171,6 +167,15 @@ const Sidebar = ({
                 <Auth />
               </div>
             )}
+
+            <TabsTrigger
+              value="notes"
+              className="flex items-center justify-center"
+              title="Notes"
+            >
+              <FaStickyNote className="w-5 h-5" />
+              <span className="sr-only">Notes</span>
+            </TabsTrigger>
           </TabsList>
 
           <div
@@ -184,7 +189,7 @@ const Sidebar = ({
                 : "none",
             }}
           >
-            <div className="w-80 h-full overflow-y-auto">
+            <div className="w-80 h-full overflow-y-auto scrollable-container">
               <TabsContent value="explorer" className="h-full">
                 <Explorer
                   projectName={projectName}
@@ -202,6 +207,10 @@ const Sidebar = ({
 
               <TabsContent value="document" className="h-full">
                 <Document />
+              </TabsContent>
+
+              <TabsContent value="notes" className="h-full">
+                <Note />
               </TabsContent>
 
               {userProfile && (

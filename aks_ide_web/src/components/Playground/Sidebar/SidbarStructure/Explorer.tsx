@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import FileTree from "./FileTree";
 import { Button } from "../../../ui/Button/Button";
 import { Input } from "../../../ui/Input/Input";
@@ -6,6 +6,8 @@ import { FolderOpen, Plus, Search, RefreshCw } from "lucide-react";
 import { Loading } from "../../../ui/Loading/Loading";
 import { Label } from "../../../ui/Label/Label";
 import type { FileStructure } from "../../../../pages/Playground";
+import useUserProfile from "../../../../utils/useUserProfile";
+import useTheme from "../../../ui/lib/useTheme";
 
 interface RepoStructureResponse {
   current_directory?: string;
@@ -32,11 +34,9 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
     handleSelect,
     onRefresh,
   }) => {
-    const [searchTerm, setSearchTerm] = React.useState("");
-    console.log(
-      "Explorer component rendered with fileStructure:",
-      fileStructure
-    );
+    const { userProfile } = useUserProfile();
+    const [searchTerm, setSearchTerm] = useState("");
+    const { theme } = useTheme();
 
     const getProcessedFileStructure = useCallback((): FileStructure | null => {
       try {
@@ -55,7 +55,6 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
           const keys = Object.keys(fileStructure);
           const hasValidStructure = keys.some(
             (key) =>
-              // Check for file entries (string values) or directory entries (object values)
               typeof fileStructure[key] === "string" ||
               (typeof fileStructure[key] === "object" &&
                 fileStructure[key] !== null)
@@ -74,7 +73,6 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
     }, [fileStructure]);
 
     const handleFileSelect = (fileName: string, absolutePath: string) => {
-      // Use the absolute path for selection
       setSelectedFileAbsolutePath(absolutePath);
       handleSelect(fileName);
     };
@@ -116,9 +114,9 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
     };
 
     const EmptyState = () => (
-      <div className="flex flex-col items-center justify-center text-center gap-6 p-6 h-full">
-        <div className="w-16 h-16  rounded-full flex items-center justify-center mb-4">
-          <FolderOpen className="w-8 h-8 " />
+      <div className="flex flex-col items-center justify-center text-center gap-6 h-full">
+        <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4">
+          <FolderOpen className="w-8 h-8" style={{ color: theme.textDimmed }} />
         </div>
         <Label scale="xl">No Project Open</Label>
         <Label dimmed>
@@ -127,21 +125,25 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
         <div className="w-full max-w-xs space-y-3">
           <Input
             ref={projectName}
+            disabled={!userProfile}
             placeholder="Enter project name"
-            className="bg-zinc-900/50 border-zinc-700/50  text-sm h-10 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-200"
           />
           <Button
             onClick={createTemplate}
             Icon={Plus}
             iconPosition="left"
-            disabled={explorerloadingStatus}
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-sm h-10 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            disabled={explorerloadingStatus || !userProfile}
+            className="w-full text-sm h-10 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            style={{
+              background: theme.primaryGradient,
+              color: theme.textColor,
+            }}
           >
             {explorerloadingStatus ? (
               <>
                 <Loading
                   className="w-4 h-4 mr-2"
-                  pattern="dots"
+                  pattern="wave"
                   loadingMessage="Creating..."
                 />
               </>
@@ -157,7 +159,7 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
       <div className="flex flex-col items-center justify-center text-center p-6 h-full">
         <Loading
           variant="default"
-          pattern="dots"
+          pattern="wave"
           loadingMessage="Please wait while we load your project structure"
         />
       </div>
@@ -168,18 +170,31 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
       const fullPath = getCurrentDirectory();
 
       return (
-        <div className="px-4 py-3 border-b border-zinc-800/50 bg-gradient-to-r from-zinc-900/50 to-zinc-800/30">
+        <div
+          className="px-4 py-3 border-b"
+          style={{
+            borderColor: theme.secondaryColor,
+            background: `linear-gradient(to right, ${theme.backgroundColor}80, ${theme.secondaryColor}30)`,
+          }}
+        >
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center space-x-2 min-w-0 flex-1">
-              <FolderOpen className="w-4 h-4 text-blue-400 flex-shrink-0" />
+              <FolderOpen
+                className="w-4 h-4 flex-shrink-0"
+                style={{ color: theme.primaryColor }}
+              />
               <div className="min-w-0 flex-1">
-                <h3 className=" font-semibold text-sm truncate">
+                <h3
+                  className="font-semibold text-sm truncate"
+                  style={{ color: theme.textColor }}
+                >
                   {displayName || "Project"}
                 </h3>
                 {fullPath && (
                   <p
-                    className=" text-xs font-mono truncate mt-0.5"
+                    className="text-xs font-mono truncate mt-0.5"
                     title={fullPath}
+                    style={{ color: theme.textDimmed }}
                   >
                     {fullPath}
                   </p>
@@ -188,14 +203,21 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
             </div>
             <div className="flex items-center space-x-1">
               {explorerloadingStatus && (
-                <Loading className="w-4 h-4 text-blue-400" />
+                <Loading pattern="wave" className="w-4 h-4" />
               )}
               {onRefresh && (
                 <Button
                   onClick={onRefresh}
                   scale="sm"
                   disabled={explorerloadingStatus}
-                  className="h-7 w-7 p-0  hover: hover: disabled:opacity-50"
+                  className="h-7 w-7 p-0 disabled:opacity-50"
+                  style={
+                    {
+                      backgroundColor: "transparent",
+                      color: theme.textColor,
+                      "--hover-bg": theme.secondaryColor,
+                    } as React.CSSProperties & { [key: string]: string }
+                  }
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                 </Button>
@@ -204,13 +226,13 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
           </div>
 
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 " />
             <Input
+              Icon={Search}
+              type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search files..."
-              disabled={explorerloadingStatus}
-              className="pl-9 h-8  border-zinc-700/50  text-xs focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 disabled:opacity-50"
+              variant="minimal"
             />
           </div>
         </div>

@@ -5,9 +5,9 @@ import {
   Terminal as TerminalIcon,
   Play,
 } from "lucide-react";
-import { Terminal as XTerminal } from "@xterm/xterm";
-import { FitAddon } from "@xterm/addon-fit";
-import "@xterm/xterm/css/xterm.css";
+import { Terminal as XTerminal } from "xterm";
+import { FitAddon } from "xterm-addon-fit";
+import "xterm/css/xterm.css";
 
 import {
   Card,
@@ -482,9 +482,7 @@ const Terminal: React.FC<TerminalProps> = ({
   const TerminalHeader = () => (
     <CardHeader showBorder={true}>
       <div className="flex flex-col gap-3 w-full">
-        {/* Main Header Row */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-3 sm:gap-4">
-          {/* Left Section - Terminal Title & Status */}
           <div className="flex items-center gap-2 min-w-0">
             <TerminalIcon
               className="w-4 h-4 shrink-0"
@@ -513,7 +511,6 @@ const Terminal: React.FC<TerminalProps> = ({
             </div>
           </div>
 
-          {/* Right Section - Controls */}
           <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end">
             <div className="block sm:hidden">
               <ConnectionStatus />

@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from "react";
 import {
   FaFile,
@@ -28,10 +27,8 @@ const FileTree: React.FC<FileTreeProps> = ({
 }) => {
   const { theme } = useTheme();
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
-    new Set(["/", path]) // Auto-expand root and current path
+    new Set(["/", path])
   );
-
-  console.log("FileTree structure:", structure);
 
   const toggleFolder = (folderPath: string) => {
     setExpandedFolders((prev) => {
@@ -45,7 +42,6 @@ const FileTree: React.FC<FileTreeProps> = ({
     });
   };
 
-  // Get appropriate icon for file type
   const getFileIcon = (fileName: string) => {
     const extension = fileName.split(".").pop()?.toLowerCase();
 
@@ -91,7 +87,6 @@ const FileTree: React.FC<FileTreeProps> = ({
     }
   };
 
-  // Get color for file type using theme colors
   const getFileColor = (fileName: string) => {
     const extension = fileName.split(".").pop()?.toLowerCase();
 
@@ -148,18 +143,16 @@ const FileTree: React.FC<FileTreeProps> = ({
     }
   };
 
-  // Filter items based on search term and separate files from directories
   const filteredData = useMemo(() => {
     if (!structure || typeof structure !== "object") {
       return { directories: {}, files: {} };
     }
 
     const directories: Record<string, FileStructure> = {};
-    const files: Record<string, string> = {}; // fileName -> absolutePath
+    const files: Record<string, string> = {};
 
     Object.entries(structure).forEach(([key, value]) => {
       if (typeof value === "string") {
-        // This is a fallback case: key is fileName, value is absolutePath
         if (
           !searchTerm ||
           key.toLowerCase().includes(searchTerm.toLowerCase())
@@ -167,14 +160,12 @@ const FileTree: React.FC<FileTreeProps> = ({
           files[key] = value;
         }
       } else if (typeof value === "object" && value !== null) {
-        // Check if this is a file entry (absolutePath -> fileName mapping)
         const entries = Object.entries(value);
         const isFileEntry =
           entries.length > 0 &&
           entries.every(([k, v]) => typeof v === "string" && k.startsWith("/"));
 
         if (isFileEntry) {
-          // This is a file entry: { [absolutePath]: fileName }
           entries.forEach(([absolutePath, fileName]) => {
             if (typeof fileName === "string") {
               if (
@@ -186,7 +177,6 @@ const FileTree: React.FC<FileTreeProps> = ({
             }
           });
         } else {
-          // This is a directory
           if (
             !searchTerm ||
             key.toLowerCase().includes(searchTerm.toLowerCase())
@@ -205,7 +195,7 @@ const FileTree: React.FC<FileTreeProps> = ({
       <div className="flex flex-col items-center justify-center py-6 px-3 text-center">
         <div
           className="w-10 h-10 rounded-lg flex items-center justify-center mb-2"
-          style={{ backgroundColor: `${theme.backgroundColor}80` }}
+          style={{ backgroundColor: theme.secondaryColor }}
         >
           <FaFolder className="w-4 h-4" style={{ color: theme.textDimmed }} />
         </div>
@@ -234,16 +224,10 @@ const FileTree: React.FC<FileTreeProps> = ({
           <div key={`dir-${dirName}`} className="select-none">
             <div
               className="flex items-center gap-1.5 cursor-pointer px-1.5 py-1 rounded-md transition-all duration-150 group border border-transparent"
-              style={{
-                "&:hover": {
-                  backgroundColor: `${theme.backgroundColor}40`,
-                  borderColor: `${theme.primaryColor}30`,
-                },
-              }}
               onClick={() => toggleFolder(currentPath)}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = `${theme.backgroundColor}40`;
-                e.currentTarget.style.borderColor = `${theme.primaryColor}30`;
+                e.currentTarget.style.backgroundColor = theme.accentColor;
+                e.currentTarget.style.borderColor = theme.accentColor + "50";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = "transparent";
@@ -283,18 +267,9 @@ const FileTree: React.FC<FileTreeProps> = ({
 
             {isExpanded && (
               <div
-                className="ml-3 mt-0.5 border-l pl-2 space-y-0.5 relative"
+                className="ml-3 mt-0.5 pl-2 space-y-0.5 relative"
                 style={{
-                  borderColor: `${theme.backgroundColor}80`,
-                  "&::before": {
-                    content: '""',
-                    position: "absolute",
-                    left: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: "1px",
-                    background: `linear-gradient(to bottom, ${theme.primaryColor}20, transparent)`,
-                  },
+                  borderLeft: `1px solid ${theme.secondaryColor}`,
                 }}
               >
                 <FileTree
@@ -330,8 +305,8 @@ const FileTree: React.FC<FileTreeProps> = ({
             }
             onMouseEnter={(e) => {
               if (!isEllipsis) {
-                e.currentTarget.style.backgroundColor = `${theme.backgroundColor}40`;
-                e.currentTarget.style.borderColor = `${theme.primaryColor}30`;
+                e.currentTarget.style.backgroundColor = theme.textDimmed + "20";
+                e.currentTarget.style.borderColor = theme.textDimmed + "30";
               }
             }}
             onMouseLeave={(e) => {
@@ -383,13 +358,13 @@ const FileTree: React.FC<FileTreeProps> = ({
             className="flex flex-col items-center justify-center py-4 px-3 text-center 
                        rounded-lg border mt-1"
             style={{
-              backgroundColor: `${theme.warningColor}10`,
-              borderColor: `${theme.warningColor}30`,
+              backgroundColor: theme.warningColor + "20",
+              borderColor: theme.warningColor + "50",
             }}
           >
             <div
               className="w-8 h-8 rounded-md flex items-center justify-center mb-1.5"
-              style={{ backgroundColor: `${theme.warningColor}20` }}
+              style={{ backgroundColor: theme.warningColor + "30" }}
             >
               <FaFile
                 className="w-3.5 h-3.5"
@@ -402,10 +377,7 @@ const FileTree: React.FC<FileTreeProps> = ({
             >
               No matches found
             </p>
-            <p
-              className="text-xs mt-0.5"
-              style={{ color: `${theme.warningColor}70` }}
-            >
+            <p className="text-xs mt-0.5" style={{ color: theme.textDimmed }}>
               Try adjusting your search term: "{searchTerm}"
             </p>
           </div>

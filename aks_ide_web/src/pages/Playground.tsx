@@ -22,7 +22,6 @@ const Playground = () => {
 
   const handleSelect = useCallback((path: string) => {
     setSelectedFile(path);
-    console.log(path);
   }, []);
 
   const handleSaveStatusChange = useCallback(
@@ -33,7 +32,6 @@ const Playground = () => {
   );
 
   const openRepo = useCallback(() => {
-    console.log("openRepo called");
     if (!userProfile?.email) return;
 
     setExplorerLoadingStatus(true);
@@ -46,7 +44,6 @@ const Playground = () => {
     if (!userProfile?.email) return;
 
     const handleRepoStructure = (data: FileStructure) => {
-      console.log("Received repo structure:", data);
       setFileStructure(data);
       setExplorerLoadingStatus(false);
     };
@@ -95,8 +92,6 @@ const Playground = () => {
       document.removeEventListener("fullscreenchange", onFullScreenChange);
     };
   }, []);
-
-  console.log("selectedFileAbsolutePath: ", selectedFileAbsolutePath);
 
   return (
     <div className="flex flex-col w-full h-screen overflow-hidden">

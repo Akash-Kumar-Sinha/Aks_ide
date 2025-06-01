@@ -65,9 +65,9 @@ const CodeEditor: React.FC<CodeProps> = React.memo(
     );
 
     const handleFileSaved = useCallback(
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       (message: string) => {
         onSaveStatusChange("saved");
-        console.log("File saved:", message);
 
         setTimeout(() => {
           onSaveStatusChange("idle");
@@ -134,6 +134,14 @@ const CodeEditor: React.FC<CodeProps> = React.memo(
           go: "go",
           cpp: "cpp",
           c: "c",
+          html: "html",
+          css: "css",
+          json: "json",
+          md: "markdown",
+          yaml: "yaml",
+          yml: "yaml",
+          sh: "shell",
+          rb: "ruby",
         };
         setLanguage(languageMap[fileExtension] || "plaintext");
       }
