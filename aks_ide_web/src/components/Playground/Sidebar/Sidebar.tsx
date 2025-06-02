@@ -81,6 +81,7 @@ const Sidebar = ({
         <div className="flex">
           <TabsList
             orientation="vertical"
+            scrollable={true}
             className="flex items-center relative"
             style={{
               backgroundColor: theme.backgroundColor,

@@ -12,4 +12,8 @@ export default defineConfig({
       "react-dom": path.resolve("./node_modules/react-dom"),
     },
   },
+  server: {
+    host: "0.0.0.0",
+    port: 5173,
+  },
 });

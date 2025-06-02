@@ -7,12 +7,11 @@ The **Terminal Module** is a core component of **Aks IDE** – a cloud-based, re
 ![Terminal Image](image.png)
 
 - **Watch Aks IDE in Action – Rust Server Branch**  
-[Click to watch the demo video](https://drive.google.com/file/d/1lsRfhyKzmDOu24aeY3xtF6QpcKJjdgNM/view?usp=sharing)
-
+  [Click to watch the demo video](https://drive.google.com/file/d/1lsRfhyKzmDOu24aeY3xtF6QpcKJjdgNM/view?usp=sharing)
 
 - **Legacy Version**  
-This is the previous working version of the terminal module from the `main` branch.  
-[Click to watch the legacy demo](https://drive.google.com/file/d/11ykA2aA7gbdgfaeedPh0G2Spd1P8DdyW/view?usp=sharing)
+  This is the previous working version of the terminal module from the `main` branch.  
+  [Click to watch the legacy demo](https://drive.google.com/file/d/11ykA2aA7gbdgfaeedPh0G2Spd1P8DdyW/view?usp=sharing)
 
 ---
 
@@ -28,23 +27,23 @@ This is the previous working version of the terminal module from the `main` bran
 
 ## ⚙️ Architecture Overview
 
-| Component     | Technology           |
-| ------------- | -------------------- |
-| Backend       | Rust (Axum framework) |
-| Frontend      | React + xterm.js      |
+| Component     | Technology                  |
+| ------------- | --------------------------- |
+| Backend       | Rust (Axum framework)       |
+| Frontend      | React + xterm.js            |
 | Communication | WebSockets (bi-directional) |
-| Terminal Core | PTY (Pseudo-Terminal) |
+| Terminal Core | PTY (Pseudo-Terminal)       |
 
 ---
 
 ## 💡 Core Features
 
-| Feature                  | Description                                                                 |
-|--------------------------|-----------------------------------------------------------------------------|
-| 🐧 **Real Linux Shell**   | Full-featured bash shell inside an Ubuntu-based Docker container.           |
-| 🔄 **WebSocket I/O**      | Real-time terminal input/output via WebSocket.                              |
-| 🖥️ **xterm.js UI**         | Responsive terminal interface rendered in-browser using xterm.js.           |
-| 🧱 **Single Terminal**     | One terminal session per user (multi-terminal support coming soon).         |
+| Feature                     | Description                                                                     |
+| --------------------------- | ------------------------------------------------------------------------------- |
+| 🐧 **Real Linux Shell**     | Full-featured bash shell inside an Ubuntu-based Docker container.               |
+| 🔄 **WebSocket I/O**        | Real-time terminal input/output via WebSocket.                                  |
+| 🖥️ **xterm.js UI**          | Responsive terminal interface rendered in-browser using xterm.js.               |
+| 🧱 **Single Terminal**      | One terminal session per user (multi-terminal support coming soon).             |
 | 🛠 **Dev Tool Installation** | Users can install languages/tools (Node.js, Python, etc.) inside the container. |
 
 ---
@@ -120,16 +119,46 @@ This is the previous working version of the terminal module from the `main` bran
 
 ## 📦 Tech Stack Summary
 
-| Layer         | Technology                                |
-|--------------|--------------------------------------------|
-| Frontend      | React, xterm.js                           |
-| Backend       | Rust (Axum)                               |
-| Terminal Core | PTY (bash shell)                          |
-| Containers    | Docker (Ubuntu base image)                |
-| Communication | WebSocket                                 |
-| Editor        | Monaco Editor / CodeMirror (planned)      |
-| AI Assistant  | MCP Server, local LLMs (planned)          |
-| File Storage  | Cloud Storage, S3, External Volumes       |
+| Layer         | Technology                           |
+| ------------- | ------------------------------------ |
+| Frontend      | React, xterm.js                      |
+| Backend       | Rust (Axum)                          |
+| Terminal Core | PTY (bash shell)                     |
+| Containers    | Docker (Ubuntu base image)           |
+| Communication | WebSocket                            |
+| Editor        | Monaco Editor / CodeMirror (planned) |
+| AI Assistant  | MCP Server, local LLMs (planned)     |
+| File Storage  | Cloud Storage, S3, External Volumes  |
+
+## Running the Project
+
+- I can not dockerize the websocket server yet, as then it would be docker within docker. So, I am running the ws server on my local machine and connecting to it from the docker container.
+
+- To run the project, follow these steps:
+
+1. **Clone the repository**:
+
+  ```bash
+  git clone https://github.com/Akash-Kumar-Sinha/Aks_ide.git
+  ```
+
+  ```bash 
+   cd Aks_ide
+  ```
+
+2. Run the **Frontend and Backend HTTP Server**:
+
+  ```bash
+  docker compose up
+  ```
+
+3. **Run the WebSocket Server**
+
+  ```bash
+  cargo run
+  ```
+
+4. Open your browser and navigate to `http://localhost:5173` to access the IDE.
 
 ---
 

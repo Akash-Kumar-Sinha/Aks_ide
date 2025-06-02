@@ -1,0 +1,23 @@
+services:
+  frontend:
+    build:
+      context: ./aks_ide_web
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    env_file:
+      - ./aks_ide_web/.env
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: ./backend_ide
+      dockerfile: Dockerfile
+    network_mode: host
+    env_file:
+      - ./backend_ide/.env
+
+networks:
+  app-network:
+    driver: bridge
