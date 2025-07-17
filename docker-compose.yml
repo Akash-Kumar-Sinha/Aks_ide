@@ -1,23 +1,42 @@
+version: "3.8"
+
 services:
   frontend:
     build:
       context: ./aks_ide_web
-      dockerfile: Dockerfile
-    ports:
-      - "5173:5173"
+    container_name: aks_ide_web
     env_file:
       - ./aks_ide_web/.env
-    networks:
-      - app-network
+    ports:
+      - "80:5173"
+
+    network_mode: host
 
   backend:
     build:
       context: ./backend_ide
-      dockerfile: Dockerfile
-    network_mode: host
+    container_name: backend_ide
     env_file:
       - ./backend_ide/.env
+    ports:
+      - "8000:8000"
+    network_mode: host
 
-networks:
-  app-network:
-    driver: bridge
+  ws_backend:
+    build:
+      context: ./ws_ide
+    container_name: ws_backend
+    env_file:
+      - ./ws_ide/.env
+    ports:
+      - "9000:9000"
+    network_mode: host
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker:/var/lib/docker
+    privileged: true
+    environment:
+      - DOCKER_TLS_CERTDIR=""
+
+volumes:
+  aks_ide_pgdata:

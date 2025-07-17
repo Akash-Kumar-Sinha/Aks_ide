@@ -1,5 +1,8 @@
-use bollard::container::{Config, CreateContainerOptions, StartContainerOptions};
+use std::collections::HashMap;
+
+use bollard::container::{Config, CreateContainerOptions, NetworkingConfig, StartContainerOptions};
 use bollard::image::CreateImageOptions;
+use bollard::secret::EndpointSettings;
 use bollard::Docker;
 use futures_util::stream::TryStreamExt;
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
@@ -17,7 +20,6 @@ pub async fn create_container(
     state: AppState,
     email: String,
 ) -> Option<String> {
-
     let docker = match Docker::connect_with_socket_defaults() {
         Ok(client) => client,
         Err(e) => {
@@ -68,11 +70,17 @@ pub async fn create_container(
     let container_config = Config {
         image: Some(IMAGE),
         tty: Some(true),
-        cmd: Some(vec!["/bin/bash"]),
+        cmd: Some(vec!["/bin/bash", "-c", "sleep infinity"]),
         attach_stdin: Some(true),
         attach_stdout: Some(true),
         attach_stderr: Some(true),
         open_stdin: Some(true),
+        // networking_config: Some(NetworkingConfig {
+        //     endpoints_config: HashMap::from([(
+        //         "host",
+        //         EndpointSettings::default(),
+        //     )]),
+        // }),
         ..Default::default()
     };
 
@@ -120,11 +128,15 @@ pub async fn create_container(
         .await
     {
         Ok(_) => {
+            println!("Container started successfully: {}", container.id);
             s.emit(
                 "terminal_info",
                 "Container started successfully. Updating user profile",
             )
             .ok();
+
+            // Wait a moment for container to be fully ready
+            tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
         }
         Err(e) => {
             eprintln!(" Failed to start container: {}", e);
