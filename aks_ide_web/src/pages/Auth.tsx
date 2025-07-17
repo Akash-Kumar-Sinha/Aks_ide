@@ -5,17 +5,18 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
 
-import { Button } from "../components/ui/Button/Button";
 import { Loading } from "../components/ui/Loading/Loading";
 import {
   Dialog,
   DialogHeader,
-  DialogBody,
+  DialogContent,
   DialogTitle,
   DialogDescription,
   DialogTrigger,
-} from "../components/ui/Dialog/Dialog";
-import { Input } from "../components/ui/Input/Input";
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { LogIn } from "lucide-react";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -26,7 +27,6 @@ const Auth = () => {
   const [status, setStatus] = useState<LOGIN_STATUS>("AUTH");
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [authOpen, setAuthOpen] = useState(false);
 
   const schema = z.object({
     email: z.string().email({ message: "Invalid email" }),
@@ -118,96 +118,102 @@ const Auth = () => {
     }
   };
 
-  // Handle input change for custom Input component
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleEmailChange = (value: string, isValid: boolean) => {
-    setValue("email", value, { shouldValidate: true });
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setValue("email", e.target.value, { shouldValidate: true });
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handlePasswordChange = (value: string, isValid: boolean) => {
-    setValue("password", value, { shouldValidate: true });
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setValue("password", e.target.value, { shouldValidate: true });
   };
 
   return (
-    <Dialog
-      open={authOpen}
-      onOpenChange={setAuthOpen}
-      scale="xl"
-      scrollable={true}
-      scrollDirection="vertical"
-      scrollVariant="gradient"
-      resizable={true}
-    >
+    <Dialog>
       <DialogTrigger asChild>
-        <Button className="rounded-full text-xs">Login</Button>
+        <Button className="rounded-full text-xs bg-blue-500 hover:bg-blue-600 text-white">
+          <LogIn />
+        </Button>
       </DialogTrigger>
-      <DialogHeader>
-        <DialogTitle>Authentication</DialogTitle>
-        <DialogDescription>
-          Please login to access this feature.
-        </DialogDescription>
-      </DialogHeader>
 
-      <DialogBody>
+      <DialogContent className="bg-[#000000] border-[#333333] max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-[#cccccc]">Authentication</DialogTitle>
+          <DialogDescription className="text-[#808080]">
+            Please login to access this feature.
+          </DialogDescription>
+        </DialogHeader>
+
         {message && (
-          <p className="text-red-500 font-medium text-xs text-center">
+          <p className="text-[#f85149] font-medium text-xs text-center bg-[#1a1a1a] border border-[#f85149]/30 rounded p-2">
             {message}
           </p>
         )}
 
         {loading ? (
-          <Loading scale="sm" pattern="dots" />
+          <div className="flex justify-center py-8">
+            <Loading scale="sm" pattern="dots" />
+          </div>
         ) : (
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="w-full flex flex-col gap-4"
           >
             {(status === "AUTH" || status === "SENT") && (
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="Enter email"
-                label="Email"
-                required={true}
-                disabled={status === "SENT"}
-                onInputChange={handleEmailChange}
-                validationResult={
-                  errors.email
-                    ? {
-                        isValid: false,
-                        message: errors.email.message as string,
-                      }
-                    : null
-                }
-                enableValidation={true}
-              />
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="email"
+                  className="text-sm font-medium text-[#cccccc]"
+                >
+                  Email
+                </label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="Enter email"
+                  required={true}
+                  disabled={status === "SENT"}
+                  onChange={handleEmailChange}
+                  className={`bg-[#333333] border-[#333333] text-[#cccccc] placeholder-[#808080] focus:border-[#569cd6] focus:ring-0 ${
+                    errors.email ? "border-red-500" : ""
+                  }`}
+                />
+                {errors.email && (
+                  <p className="text-red-400 text-xs">
+                    {errors.email.message as string}
+                  </p>
+                )}
+              </div>
             )}
 
             {status === "PASSWORD" && (
               <>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="Enter Password"
-                  label="Password"
-                  required={true}
-                  onInputChange={handlePasswordChange}
-                  validationResult={
-                    errors.password
-                      ? {
-                          isValid: false,
-                          message: errors.password.message as string,
-                        }
-                      : null
-                  }
-                  enableValidation={true}
-                />
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="password"
+                    className="text-sm font-medium text-[#cccccc]"
+                  >
+                    Password
+                  </label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    placeholder="Enter Password"
+                    required={true}
+                    onChange={handlePasswordChange}
+                    className={`bg-[#333333] border-[#333333] text-[#cccccc] placeholder-[#808080] focus:border-[#569cd6] focus:ring-0 ${
+                      errors.password ? "border-red-500" : ""
+                    }`}
+                  />
+                  {errors.password && (
+                    <p className="text-red-400 text-xs">
+                      {errors.password.message as string}
+                    </p>
+                  )}
+                </div>
                 <Button
                   type="submit"
-                  className="w-full py-3 bg-indigo-500 text-[#EBEBEF] font-semibold rounded-lg hover:bg-indigo-600 transition-all duration-300 shadow-md"
+                  className="w-full py-3 bg-[#569cd6] text-white font-semibold rounded-lg hover:bg-[#4a8bc2] transition-all duration-300 shadow-md"
                 >
                   Login
                 </Button>
@@ -218,14 +224,14 @@ const Auth = () => {
               <Button
                 type="button"
                 onClick={sentVerificationLink}
-                className="w-full py-3 bg-[#7554ad] text-[#EBEBEF] font-semibold rounded-lg hover:bg-[#5b3f8b] transition-all duration-300 shadow-md"
+                className="w-full py-3 bg-[#569cd6] text-white font-semibold rounded-lg hover:bg-[#4a8bc2] transition-all duration-300 shadow-md"
               >
                 {status === "SENT" ? "Next" : "Send Verification Link"}
               </Button>
             )}
           </form>
         )}
-      </DialogBody>
+      </DialogContent>
     </Dialog>
   );
 };

@@ -1,17 +1,21 @@
-FROM node:18-alpine
+FROM node:18-alpine AS build
 
-WORKDIR /app
+WORKDIR /user/src/app
 
-COPY package.json ./
+COPY ./package*.json ./
 
-RUN npm install
+RUN --mount=type=cache,target=/usr/src/app/.npm \
+    npm set cache /usr/src/app/.npm \
+    npm install
 
 COPY . .
+
+RUN npm run build
 
 ENV PORT=5173
 
 EXPOSE 5173
 
-# CMD ["npm", "run", "dev"]
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+CMD ["npx", "serve", "-s", "dist", "-l", "5173"]
+
 

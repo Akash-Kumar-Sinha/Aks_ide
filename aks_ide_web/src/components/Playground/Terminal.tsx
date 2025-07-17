@@ -9,20 +9,11 @@ import { Terminal as XTerminal } from "xterm";
 import { FitAddon } from "xterm-addon-fit";
 import "xterm/css/xterm.css";
 
-import {
-  Card,
-  CardHeader,
-  CardContent,
-  CardTitle,
-  CardDescription,
-  CardBadge,
-} from "../ui/Card/Card";
-import { Button } from "../ui/Button/Button";
 import { Loading } from "../ui/Loading/Loading";
-import useTheme from "../ui/lib/useTheme";
 import type { SaveStatus } from "../../pages/Playground";
 import useUserProfile from "../../utils/useUserProfile";
 import socket from "../../utils/Socket";
+import { Button } from "../ui/button";
 
 interface TerminalProps {
   openRepo: () => void;
@@ -42,7 +33,6 @@ const Terminal: React.FC<TerminalProps> = ({
   const fitAddon = useRef<FitAddon | null>(null);
 
   const { userProfile: user, loading } = useUserProfile();
-  const { theme } = useTheme();
   const [connected, setConnected] = useState(false);
   const [terminalActive, setTerminalActive] = useState(false);
   const [terminalLoaded, setTerminalLoaded] = useState(false);
@@ -259,26 +249,26 @@ const Terminal: React.FC<TerminalProps> = ({
 
     const terminal = new XTerminal({
       theme: {
-        background: theme.backgroundColor,
-        foreground: theme.textColor,
-        cursor: theme.primaryColor,
-        cursorAccent: theme.backgroundColor,
-        black: theme.textDimmed,
-        red: theme.errorColor,
-        green: theme.successColor,
-        yellow: theme.warningColor,
-        blue: theme.primaryColor,
-        magenta: theme.primaryShade,
-        cyan: theme.infoColor,
-        white: theme.textColor,
-        brightBlack: theme.secondaryColor,
-        brightRed: theme.errorColor,
-        brightGreen: theme.successColor,
-        brightYellow: theme.warningColor,
-        brightBlue: theme.primaryShade,
-        brightMagenta: theme.accentColor,
-        brightCyan: theme.infoColor,
-        brightWhite: theme.textColor,
+        background: "#000000",
+        foreground: "#ffffff",
+        cursor: "#3b82f6",
+        cursorAccent: "#ffffff",
+        black: "#9ca3af",
+        red: "#ef4444",
+        green: "#10b981",
+        yellow: "#f59e0b",
+        blue: "#60a5fa",
+        magenta: "#8b5cf6",
+        cyan: "#06b6d4",
+        white: "#f1f5f9",
+        brightBlack: "#6b7280",
+        brightRed: "#ef4444",
+        brightGreen: "#10b981",
+        brightYellow: "#f59e0b",
+        brightBlue: "#60a5fa",
+        brightMagenta: "#8b5cf6",
+        brightCyan: "#06b6d4",
+        brightWhite: "#f1f5f9",
       },
       fontSize: 13,
       fontFamily:
@@ -347,7 +337,7 @@ const Terminal: React.FC<TerminalProps> = ({
     return () => {
       console.log("Terminal component unmounting");
     };
-  }, [user, handleResizeTerminal, terminalActive, theme]);
+  }, [user, handleResizeTerminal, terminalActive]);
 
   useEffect(() => {
     if (terminalInstance.current && terminalActive) {
@@ -412,21 +402,33 @@ const Terminal: React.FC<TerminalProps> = ({
     if (saveStatus === "idle") return null;
 
     const statusConfig = {
-      saving: { text: "Saving", variant: "info" as const, animate: true },
-      saved: { text: "Saved", variant: "success" as const, animate: false },
-      error: { text: "Error", variant: "error" as const, animate: false },
+      saving: {
+        text: "Saving",
+        className: "bg-[#1a1a1a] text-[#569cd6]",
+        animate: true,
+      },
+      saved: {
+        text: "Saved",
+        className: "bg-[#1a1a1a] text-[#4ec9b0]",
+        animate: false,
+      },
+      error: {
+        text: "Error",
+        className: "bg-[#1a1a1a] text-[#f14c4c]",
+        animate: false,
+      },
     };
 
     const config = statusConfig[saveStatus];
 
     return (
-      <CardBadge
-        variant={config.variant}
-        scale="sm"
-        className={config.animate ? "animate-pulse" : ""}
+      <span
+        className={`px-2 py-1 text-xs rounded-full ${config.className} ${
+          config.animate ? "animate-pulse" : ""
+        }`}
       >
         {config.text}
-      </CardBadge>
+      </span>
     );
   };
 
@@ -434,24 +436,18 @@ const Terminal: React.FC<TerminalProps> = ({
     <div className="flex items-center gap-2">
       <div className="flex items-center gap-1">
         <div
-          className={`w-2 h-2 rounded-full transition-colors duration-200`}
+          className={`w-2 h-2 rounded-full transition-colors duration-200 ${
+            terminalActive && terminalReady
+              ? "bg-green-500 shadow-green-500/50"
+              : terminalActive
+              ? "bg-yellow-500 shadow-yellow-500/50"
+              : "bg-red-500 shadow-red-500/50"
+          }`}
           style={{
-            backgroundColor:
-              terminalActive && terminalReady
-                ? theme.successColor
-                : terminalActive
-                ? theme.warningColor
-                : theme.errorColor,
-            boxShadow: `0 0 4px ${
-              terminalActive && terminalReady
-                ? theme.successColor + "50"
-                : terminalActive
-                ? theme.warningColor + "50"
-                : theme.errorColor + "50"
-            }`,
+            boxShadow: `0 0 4px currentColor`,
           }}
         />
-        <span className="text-xs" style={{ color: theme.textDimmed }}>
+        <span className="text-xs text-[#808080]">
           {terminalActive && terminalReady
             ? "Ready"
             : terminalActive
@@ -464,15 +460,16 @@ const Terminal: React.FC<TerminalProps> = ({
         <div
           className={`w-2 h-2 rounded-full transition-colors duration-200 ${
             !connected ? "animate-pulse" : ""
+          } ${
+            connected
+              ? "bg-green-500 shadow-green-500/50"
+              : "bg-red-500 shadow-red-500/50"
           }`}
           style={{
-            backgroundColor: connected ? theme.successColor : theme.errorColor,
-            boxShadow: `0 0 4px ${
-              connected ? theme.successColor + "50" : theme.errorColor + "50"
-            }`,
+            boxShadow: `0 0 4px currentColor`,
           }}
         />
-        <span className="text-xs" style={{ color: theme.textDimmed }}>
+        <span className="text-xs text-[#808080]">
           {connected ? "Connected" : "Disconnected"}
         </span>
       </div>
@@ -480,103 +477,79 @@ const Terminal: React.FC<TerminalProps> = ({
   );
 
   const TerminalHeader = () => (
-    <CardHeader showBorder={true}>
-      <div className="flex flex-col gap-3 w-full">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-3 sm:gap-4">
-          <div className="flex items-center gap-2 min-w-0">
-            <TerminalIcon
-              className="w-4 h-4 shrink-0"
-              style={{ color: theme.primaryColor }}
-            />
-            <CardTitle
-              className="text-sm font-medium"
-              style={{ color: theme.textColor }}
+    <div className="border-b border-[#1a1a1a] bg-[#000000] p-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <TerminalIcon className="w-4 h-4 shrink-0 text-[#569cd6]" />
+          <h3 className="text-sm font-medium text-[#cccccc]">Terminal</h3>
+          {selectedFile && (
+            <span
+              className="px-2 py-1 text-xs rounded-sm bg-[#1a1a1a] text-[#569cd6] truncate max-w-full"
+              title={selectedFile}
             >
-              Terminal
-            </CardTitle>
-            {selectedFile && (
-              <CardBadge
-                variant="primary"
-                scale="sm"
-                className="truncate max-w-full"
-                title={selectedFile}
-              >
-                📁 {selectedFile.split("/").pop()}
-              </CardBadge>
-            )}
+              📁 {selectedFile.split("/").pop()}
+            </span>
+          )}
 
-            <SaveStatusComponent />
-            <div className="hidden sm:block">
-              <ConnectionStatus />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end">
-            <div className="block sm:hidden">
-              <ConnectionStatus />
-            </div>
-
-            <div className="flex items-center gap-1">
-              <Button
-                onClick={clearTerminal}
-                disabled={!terminalActive || !terminalReady}
-                className="px-2 py-1 text-xs"
-                style={{ color: theme.textDimmed }}
-                variant="minimal"
-                title="Clear Terminal"
-              >
-                <span className="hidden sm:inline">Clear</span>
-                <span className="sm:hidden">C</span>
-              </Button>
-
-              <Button
-                onClick={reloadTerminal}
-                disabled={!connected}
-                className="p-1"
-                style={{ color: theme.textDimmed }}
-                variant="minimal"
-                title="Reload Terminal"
-              >
-                <RefreshCw size={12} />
-              </Button>
-            </div>
-
-            <Button
-              onClick={openRepo}
-              className="flex items-center gap-2 px-2 sm:px-3 py-1.5 text-sm"
-              disabled={explorerloadingStatus}
-              variant="default"
-              Icon={Play}
-              iconPosition="left"
-            >
-              <span className="hidden sm:inline">
-                {explorerloadingStatus ? "Loading..." : "Load Repo"}
-              </span>
-              <span className="sm:hidden">
-                {explorerloadingStatus ? "Load..." : "Load"}
-              </span>
-            </Button>
+          <SaveStatusComponent />
+          <div className="hidden sm:block">
+            <ConnectionStatus />
           </div>
         </div>
+
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end">
+          <div className="block sm:hidden">
+            <ConnectionStatus />
+          </div>
+
+          <div className="flex items-center gap-1">
+            <Button
+              onClick={clearTerminal}
+              disabled={!terminalActive || !terminalReady}
+              className="px-2 py-1 text-xs text-[#808080] hover:text-[#cccccc] bg-transparent hover:bg-[#1a1a1a]"
+              variant="ghost"
+              title="Clear Terminal"
+            >
+              <span className="hidden sm:inline">Clear</span>
+              <span className="sm:hidden">C</span>
+            </Button>
+
+            <Button
+              onClick={reloadTerminal}
+              disabled={!connected}
+              className="p-1 text-gray-500 hover:text-gray-700"
+              variant="ghost"
+              title="Reload Terminal"
+            >
+              <RefreshCw size={12} />
+            </Button>
+          </div>
+
+          <Button
+            onClick={openRepo}
+            className="flex items-center gap-2 px-2 sm:px-3 py-1.5 text-sm"
+            disabled={explorerloadingStatus}
+            variant="default"
+          >
+            <Play className="w-4 h-4" />
+            <span className="hidden sm:inline">
+              {explorerloadingStatus ? "Loading..." : "Load Repo"}
+            </span>
+            <span className="sm:hidden">
+              {explorerloadingStatus ? "Load..." : "Load"}
+            </span>
+          </Button>
+        </div>
       </div>
-    </CardHeader>
+    </div>
   );
   const LoadingCard = () => (
-    <Card scrollable scrollDirection="vertical" scrollVariant="gradient">
+    <div className="max-h-full overflow-y-auto bg-[#000000] border border-[#1a1a1a] rounded-lg">
       <TerminalHeader />
-      <CardContent className="flex flex-col items-center justify-center h-full">
-        <div
-          className="flex flex-col items-center space-y-4 max-w-md mx-auto px-4"
-          style={{ color: theme.textDimmed }}
-        >
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ backgroundColor: theme.primaryColor + "20" }}
-          >
-            <TerminalIcon
-              className="w-4 h-4"
-              style={{ color: theme.primaryColor }}
-            />
+      <div className="flex flex-col items-center justify-center h-full bg-[#000000] p-6">
+        <div className="flex flex-col items-center space-y-4 max-w-md mx-auto px-4 text-[#808080]">
+          <div className="w-8 h-8 rounded-md flex items-center justify-center bg-[#1a1a1a]">
+            <TerminalIcon className="w-4 h-4 text-[#569cd6]" />
           </div>
           <Loading
             variant="default"
@@ -585,10 +558,7 @@ const Terminal: React.FC<TerminalProps> = ({
             loadingMessage={loadingMessage}
           />
 
-          <div
-            className="text-xs text-center"
-            style={{ color: theme.textDimmed }}
-          >
+          <div className="text-xs text-center text-[#808080]">
             Connected: {connected ? "✓" : "✗"} | Active:{" "}
             {terminalActive ? "✓" : "✗"} | Ready: {terminalReady ? "✓" : "✗"}
           </div>
@@ -598,27 +568,13 @@ const Terminal: React.FC<TerminalProps> = ({
               {pendingMessages.slice(-3).map((message, index) => (
                 <div
                   key={`${message.timestamp}-${index}`}
-                  className="text-xs p-2 rounded border-l-2"
-                  style={{
-                    backgroundColor:
-                      message.type === "error"
-                        ? theme.errorColor + "20"
-                        : message.type === "success"
-                        ? theme.successColor + "20"
-                        : theme.warningColor + "20",
-                    borderLeftColor:
-                      message.type === "error"
-                        ? theme.errorColor
-                        : message.type === "success"
-                        ? theme.successColor
-                        : theme.warningColor,
-                    color:
-                      message.type === "error"
-                        ? theme.errorColor
-                        : message.type === "success"
-                        ? theme.successColor
-                        : theme.warningColor,
-                  }}
+                  className={`text-xs p-2 rounded border-l-2 ${
+                    message.type === "error"
+                      ? "bg-[#1a1a1a] border-l-[#f14c4c] text-[#f14c4c]"
+                      : message.type === "success"
+                      ? "bg-[#1a1a1a] border-l-[#4ec9b0] text-[#4ec9b0]"
+                      : "bg-[#1a1a1a] border-l-[#ce9178] text-[#ce9178]"
+                  }`}
                 >
                   <span className="font-medium capitalize">
                     {message.type}:
@@ -629,84 +585,71 @@ const Terminal: React.FC<TerminalProps> = ({
             </div>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 
   // Loading state while fetching user profile
   if (loading) {
     return (
-      <Card scrollable scrollDirection="vertical" scrollVariant="gradient">
-        <CardHeader showBorder={true}>
+      <div className="max-h-full overflow-y-auto bg-[#000000] border border-[#1a1a1a] rounded-lg">
+        <div className="border-b border-[#1a1a1a] p-3">
           <div className="flex items-center gap-2">
-            <TerminalIcon
-              className="w-4 h-4"
-              style={{ color: theme.primaryColor }}
-            />
-            <CardTitle
-              className="text-sm font-medium"
-              style={{ color: theme.textColor }}
-            >
-              Terminal
-            </CardTitle>
+            <TerminalIcon className="w-4 h-4 text-[#569cd6]" />
+            <h3 className="text-sm font-medium text-[#cccccc]">Terminal</h3>
           </div>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center h-full">
-          <Loading
-            variant="default"
-            scale="lg"
-            pattern="pulse"
-            loadingMessage="Loading user profile..."
-          />
-        </CardContent>
-      </Card>
+        </div>
+        <div className="flex flex-col items-center justify-center h-full p-6">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="w-8 h-8 rounded-md flex items-center justify-center bg-[#1a1a1a]">
+              <KeyRound className="w-4 h-4 text-[#569cd6]" />
+            </div>
+            <Loading
+              variant="default"
+              scale="lg"
+              pattern="pulse"
+              loadingMessage="Loading user profile..."
+            />
+            <p className="text-sm text-[#808080]">
+              Please wait while we initialize your workspace
+            </p>
+          </div>
+        </div>
+      </div>
     );
   }
 
   // No user authenticated
   if (!user) {
     return (
-      <Card className="h-full">
-        <CardContent className="flex flex-col items-center justify-center h-full">
+      <div className="h-full bg-[#000000] border border-[#1a1a1a] rounded-lg">
+        <div className="flex flex-col items-center justify-center h-full">
           <div className="text-center space-y-4 p-8">
-            <div
-              className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center shadow-lg"
-              style={{
-                background: theme.primaryGradient,
-                boxShadow: `0 8px 32px ${theme.primaryColor}25`,
-              }}
-            >
-              <KeyRound
-                className="w-7 h-7"
-                style={{ color: theme.textColor }}
-              />
+            <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center bg-[#569cd6]">
+              <KeyRound className="w-7 h-7 text-white" />
             </div>
             <div>
-              <CardTitle className="text-xl mb-2">
+              <h3 className="text-xl mb-2 text-[#cccccc]">
                 Authentication Required
-              </CardTitle>
-              <CardDescription className="max-w-sm">
+              </h3>
+              <p className="max-w-sm text-[#808080]">
                 Please sign in to access the terminal and start coding
-              </CardDescription>
+              </p>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   if (terminalActive && terminalReady) {
     return (
-      <Card scrollable scrollDirection="vertical" scrollVariant="gradient">
+      <div className="bg-[#000000] border border-[#1a1a1a] rounded-lg">
         <TerminalHeader />
-        <CardContent
-        // scrollable
-        // scrollDirection="vertical"
-        // scrollVariant="gradient"
-        >
-          <div ref={terminalRef} className="w-full h-full" />
-        </CardContent>
-      </Card>
+        <div className="bg-[#000000] px-1">
+          <div ref={terminalRef} className="w-full h-full bg-[#000000]" />
+        </div>
+      </div>
     );
   }
 

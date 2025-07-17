@@ -1,13 +1,19 @@
 import React from "react";
 import { motion } from "framer-motion";
-import useTheme from "../lib/useTheme";
-import { cn } from "../lib/utils";
-import type {
-  DesignVariantType,
-  SpaceVariantType,
-} from "../Variant/variantType";
+
+// Dark theme color palette with blue accent
+const colors = {
+  accentColor: "#3b82f6", // blue-500
+  primaryColor: "#60a5fa", // blue-400
+  secondaryColor: "#1d4ed8", // blue-700
+  textColor: "#f8fafc", // slate-50
+  textDimmed: "#64748b", // slate-500
+  backgroundColor: "#0f172a", // slate-900
+};
 
 type LoadingPattern = "pulse" | "wave" | "spinner" | "dots" | "bars" | "matrix";
+export type DesignVariantType = "default" | "minimal";
+export type SpaceVariantType = "sm" | "lg" | "xl";
 
 type LoadingProps = {
   variant?: DesignVariantType;
@@ -30,8 +36,6 @@ const Loading = React.forwardRef<HTMLDivElement, LoadingProps>(
     },
     ref
   ) => {
-    const { theme } = useTheme();
-
     const getScaleConfig = () => {
       switch (scale) {
         case "sm":
@@ -98,7 +102,7 @@ const Loading = React.forwardRef<HTMLDivElement, LoadingProps>(
             style={{
               width: outerSize,
               height: outerSize,
-              backgroundColor: theme.accentColor + "33",
+              backgroundColor: colors.accentColor + "33",
             }}
             animate={{
               scale: [1, 1.8],
@@ -117,9 +121,9 @@ const Loading = React.forwardRef<HTMLDivElement, LoadingProps>(
             style={{
               width: middleSize,
               height: middleSize,
-              backgroundColor: theme.accentColor,
+              backgroundColor: colors.accentColor,
               boxShadow: `0 0 ${scaleConfig.size * 0.25}px ${
-                theme.accentColor
+                colors.accentColor
               }88`,
             }}
             animate={{
@@ -139,7 +143,7 @@ const Loading = React.forwardRef<HTMLDivElement, LoadingProps>(
             style={{
               width: coreSize,
               height: coreSize,
-              backgroundColor: theme.accentColor,
+              backgroundColor: colors.accentColor,
             }}
           />
         </div>
@@ -160,15 +164,19 @@ const Loading = React.forwardRef<HTMLDivElement, LoadingProps>(
               x2="100%"
               y2="0%"
             >
-              <stop offset="0%" stopColor={theme.accentColor} stopOpacity="0" />
+              <stop
+                offset="0%"
+                stopColor={colors.accentColor}
+                stopOpacity="0"
+              />
               <stop
                 offset="50%"
-                stopColor={theme.accentColor}
+                stopColor={colors.accentColor}
                 stopOpacity="1"
               />
               <stop
                 offset="100%"
-                stopColor={theme.accentColor}
+                stopColor={colors.accentColor}
                 stopOpacity="0"
               />
             </linearGradient>
@@ -206,9 +214,11 @@ const Loading = React.forwardRef<HTMLDivElement, LoadingProps>(
           style={{
             width: scaleConfig.container,
             height: scaleConfig.container,
-            borderColor: theme.textDimmed,
-            borderTopColor: theme.accentColor,
-            boxShadow: `0 0 ${scaleConfig.size * 0.2}px ${theme.accentColor}50`,
+            borderColor: colors.textDimmed,
+            borderTopColor: colors.accentColor,
+            boxShadow: `0 0 ${scaleConfig.size * 0.2}px ${
+              colors.accentColor
+            }50`,
           }}
         ></div>
       );
@@ -230,9 +240,9 @@ const Loading = React.forwardRef<HTMLDivElement, LoadingProps>(
               style={{
                 width: scaleConfig.dotSize * 4,
                 height: scaleConfig.dotSize * 4,
-                backgroundColor: theme.accentColor,
+                backgroundColor: colors.accentColor,
                 boxShadow: `0 0 ${scaleConfig.dotSize * 2}px ${
-                  theme.accentColor
+                  colors.accentColor
                 }50`,
               }}
               animate={{
@@ -270,9 +280,9 @@ const Loading = React.forwardRef<HTMLDivElement, LoadingProps>(
               className="rounded-t"
               style={{
                 width: scaleConfig.barWidth * 4,
-                backgroundColor: theme.accentColor,
+                backgroundColor: colors.accentColor,
                 boxShadow: `0 0 ${scaleConfig.barWidth * 2}px ${
-                  theme.accentColor
+                  colors.accentColor
                 }40`,
               }}
               animate={{
@@ -300,8 +310,8 @@ const Loading = React.forwardRef<HTMLDivElement, LoadingProps>(
         style={{
           width: scaleConfig.container,
           height: scaleConfig.container,
-          backgroundColor: theme.backgroundColor + "40",
-          border: `1px solid ${theme.textDimmed}20`,
+          backgroundColor: colors.backgroundColor + "40",
+          border: `1px solid ${colors.textDimmed}20`,
         }}
       >
         {Array.from({ length: 6 }).map((_, col) => (
@@ -311,7 +321,7 @@ const Loading = React.forwardRef<HTMLDivElement, LoadingProps>(
             style={{
               left: `${col * 16.66}%`,
               width: "16.66%",
-              color: theme.accentColor,
+              color: colors.accentColor,
               fontSize: `${scaleConfig.fontSize}px`,
               textShadow: `0 0 ${scaleConfig.fontSize * 0.5}px currentColor`,
             }}
@@ -372,7 +382,7 @@ const Loading = React.forwardRef<HTMLDivElement, LoadingProps>(
           {loadingMessage && (
             <motion.div
               className={`font-medium ${scaleConfig.text}`}
-              style={{ color: theme.textColor }}
+              style={{ color: colors.textColor }}
               animate={{
                 opacity: [0.7, 1, 0.7],
                 scale: [1, 1.02, 1],
@@ -389,10 +399,10 @@ const Loading = React.forwardRef<HTMLDivElement, LoadingProps>(
           {variant !== "minimal" && (
             <div className="flex justify-center mt-2 space-x-1">
               {[0, 1, 2].map((i) => {
-                const colors = [
-                  theme.accentColor,
-                  theme.primaryColor,
-                  theme.secondaryColor,
+                const colorList = [
+                  colors.accentColor,
+                  colors.primaryColor,
+                  colors.secondaryColor,
                 ];
                 return (
                   <motion.div
@@ -401,7 +411,7 @@ const Loading = React.forwardRef<HTMLDivElement, LoadingProps>(
                     style={{
                       width: scaleConfig.dotSize,
                       height: scaleConfig.dotSize,
-                      backgroundColor: colors[i],
+                      backgroundColor: colorList[i],
                     }}
                     animate={{
                       y: [-4, 0, -4],
@@ -428,12 +438,11 @@ const Loading = React.forwardRef<HTMLDivElement, LoadingProps>(
         return (
           <motion.div
             ref={ref}
-            className={cn(
-              "flex flex-col items-center justify-center p-6",
-              className
-            )}
+            className={`flex flex-col items-center justify-center p-6 ${
+              className || ""
+            }`}
             style={{
-              backgroundColor: theme.backgroundColor + "05",
+              backgroundColor: colors.backgroundColor + "05",
               borderRadius: "12px",
             }}
             initial={{ opacity: 0, scale: 0.9 }}
@@ -443,7 +452,7 @@ const Loading = React.forwardRef<HTMLDivElement, LoadingProps>(
             <div
               style={{
                 filter: `drop-shadow(0 0 ${scaleConfig.size * 0.3}px ${
-                  theme.accentColor
+                  colors.accentColor
                 }40)`,
               }}
             >
@@ -457,10 +466,9 @@ const Loading = React.forwardRef<HTMLDivElement, LoadingProps>(
         return (
           <motion.div
             ref={ref}
-            className={cn(
-              "flex flex-col items-center justify-center p-4",
-              className
-            )}
+            className={`flex flex-col items-center justify-center p-4 ${
+              className || ""
+            }`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.2, ease: "easeOut" }}

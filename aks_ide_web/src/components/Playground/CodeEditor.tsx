@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Editor from "@monaco-editor/react";
 import * as monaco from "monaco-editor";
-import useTheme from "../ui/lib/useTheme";
 import { Loading } from "../ui/Loading/Loading";
-import { Label } from "../ui/Label/Label";
 import useUserProfile from "../../utils/useUserProfile";
 import socket from "../../utils/Socket";
+import { Label } from "../ui/label";
 
 interface CodeProps {
   selectedFileAbsolutePath: string;
@@ -16,7 +15,6 @@ interface CodeProps {
 const CodeEditor: React.FC<CodeProps> = React.memo(
   ({ selectedFileAbsolutePath, selectedFile, onSaveStatusChange }) => {
     const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
-    const { theme } = useTheme();
     const { userProfile } = useUserProfile();
     const [codeContent, setCodeContent] = useState("");
     const [language, setLanguage] = useState("javascript");
@@ -66,7 +64,7 @@ const CodeEditor: React.FC<CodeProps> = React.memo(
 
     const handleFileSaved = useCallback(
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      (message: string) => {
+      (_message: string) => {
         onSaveStatusChange("saved");
 
         setTimeout(() => {
@@ -168,15 +166,10 @@ const CodeEditor: React.FC<CodeProps> = React.memo(
             />
           </div>
         ) : (
-          <div
-            className="flex items-center justify-center h-full w-full"
-            style={{ backgroundColor: theme.backgroundColor }}
-          >
+          <div className="flex items-center justify-center h-full w-full">
             <div className="flex flex-col justify-center items-center gap-2">
-              <Label scale="xl" className="text-2xl">
-                Aks IDE
-              </Label>
-              <Label dimmed>Select a file to begin coding</Label>
+              <Label className="text-2xl">Aks IDE</Label>
+              <Label>Select a file to begin coding</Label>
             </div>
           </div>
         )}

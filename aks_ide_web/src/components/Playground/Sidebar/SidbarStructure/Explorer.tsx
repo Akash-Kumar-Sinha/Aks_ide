@@ -1,13 +1,10 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect } from "react";
 import FileTree from "./FileTree";
-import { Button } from "../../../ui/Button/Button";
-import { Input } from "../../../ui/Input/Input";
-import { FolderOpen, Plus, Search, RefreshCw } from "lucide-react";
+import { FolderOpen, Plus, RefreshCw } from "lucide-react";
 import { Loading } from "../../../ui/Loading/Loading";
-import { Label } from "../../../ui/Label/Label";
 import type { FileStructure } from "../../../../pages/Playground";
-import useUserProfile from "../../../../utils/useUserProfile";
-import useTheme from "../../../ui/lib/useTheme";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface RepoStructureResponse {
   current_directory?: string;
@@ -34,10 +31,6 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
     handleSelect,
     onRefresh,
   }) => {
-    const { userProfile } = useUserProfile();
-    const [searchTerm, setSearchTerm] = useState("");
-    const { theme } = useTheme();
-
     const getProcessedFileStructure = useCallback((): FileStructure | null => {
       try {
         const repoResponse = fileStructure as RepoStructureResponse;
@@ -114,49 +107,47 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
     };
 
     const EmptyState = () => (
-      <div className="flex flex-col items-center justify-center text-center gap-6 h-full">
-        <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4">
-          <FolderOpen className="w-8 h-8" style={{ color: theme.textDimmed }} />
+      <div className="flex flex-col items-center justify-center h-64 text-center p-6 bg-[#000000]">
+        <div className="w-16 h-16 rounded-2xl bg-[#569cd6] flex items-center justify-center mb-4 shadow-lg">
+          <FolderOpen className="w-8 h-8 text-white" />
         </div>
-        <Label scale="xl">No Project Open</Label>
-        <Label dimmed>
-          Create a new project or open an existing repository to get started.
-        </Label>
+        <h3 className="text-lg font-semibold text-[#cccccc] mb-2">
+          No Repository Loaded
+        </h3>
+        <p className="text-[#808080] text-sm mb-6 max-w-sm">
+          Create a new project or load an existing repository to start exploring
+          your files.
+        </p>
+
         <div className="w-full max-w-xs space-y-3">
-          <Input
-            ref={projectName}
-            disabled={!userProfile}
-            placeholder="Enter project name"
-          />
-          <Button
-            onClick={createTemplate}
-            Icon={Plus}
-            iconPosition="left"
-            disabled={explorerloadingStatus || !userProfile}
-            className="w-full text-sm h-10 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-            style={{
-              background: theme.primaryGradient,
-              color: theme.textColor,
-            }}
-          >
-            {explorerloadingStatus ? (
-              <>
-                <Loading
-                  className="w-4 h-4 mr-2"
-                  pattern="wave"
-                  loadingMessage="Creating..."
-                />
-              </>
-            ) : (
-              <>Create New Project</>
-            )}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Input
+              ref={projectName}
+              placeholder="Project name"
+              className="flex-1 bg-[#333333] border-[#333333] text-[#cccccc] placeholder-[#808080] focus:border-[#569cd6] focus:ring-0"
+            />
+            <Button
+              onClick={createTemplate}
+              disabled={explorerloadingStatus}
+              className="px-4 bg-[#569cd6] hover:bg-[#4a8bc2] text-white disabled:opacity-50"
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+
+          {explorerloadingStatus && (
+            <Loading
+              variant="minimal"
+              scale="sm"
+              pattern="pulse"
+              loadingMessage="Creating project..."
+            />
+          )}
         </div>
       </div>
     );
-
     const LoadingState = () => (
-      <div className="flex flex-col items-center justify-center text-center p-6 h-full">
+      <div className="flex flex-col items-center justify-center text-center p-6 h-full bg-[#000000]">
         <Loading
           variant="default"
           pattern="wave"
@@ -170,31 +161,18 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
       const fullPath = getCurrentDirectory();
 
       return (
-        <div
-          className="px-4 py-3 border-b"
-          style={{
-            borderColor: theme.secondaryColor,
-            background: `linear-gradient(to right, ${theme.backgroundColor}80, ${theme.secondaryColor}30)`,
-          }}
-        >
-          <div className="flex items-center justify-between mb-3">
+        <div className="px-4 py-3 border-b border-[#1a1a1a] bg-[#000000]">
+          <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 min-w-0 flex-1">
-              <FolderOpen
-                className="w-4 h-4 flex-shrink-0"
-                style={{ color: theme.primaryColor }}
-              />
+              <FolderOpen className="w-4 h-4 flex-shrink-0 text-[#569cd6]" />
               <div className="min-w-0 flex-1">
-                <h3
-                  className="font-semibold text-sm truncate"
-                  style={{ color: theme.textColor }}
-                >
+                <h3 className="font-semibold text-sm truncate text-[#cccccc]">
                   {displayName || "Project"}
                 </h3>
                 {fullPath && (
                   <p
-                    className="text-xs font-mono truncate mt-0.5"
+                    className="text-xs font-mono truncate mt-0.5 text-[#808080]"
                     title={fullPath}
-                    style={{ color: theme.textDimmed }}
                   >
                     {fullPath}
                   </p>
@@ -208,52 +186,32 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
               {onRefresh && (
                 <Button
                   onClick={onRefresh}
-                  scale="sm"
                   disabled={explorerloadingStatus}
-                  className="h-7 w-7 p-0 disabled:opacity-50"
-                  style={
-                    {
-                      backgroundColor: "transparent",
-                      color: theme.textColor,
-                      "--hover-bg": theme.secondaryColor,
-                    } as React.CSSProperties & { [key: string]: string }
-                  }
+                  className="h-7 w-7 p-0 disabled:opacity-50 bg-transparent text-[#cccccc] hover:bg-[#569cd6]/20"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                 </Button>
               )}
             </div>
           </div>
-
-          <div className="relative">
-            <Input
-              Icon={Search}
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search files..."
-              variant="minimal"
-            />
-          </div>
         </div>
       );
     };
 
     return (
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full bg-[#000000]">
         {hasFileStructure() && <ProjectHeader />}
 
-        <div className="flex-1 overflow-auto custom-scrollbar">
+        <div className="flex-1 overflow-auto custom-scrollbar bg-[#000000]">
           {explorerloadingStatus && !hasFileStructure() ? (
             <LoadingState />
           ) : !hasFileStructure() ? (
             <EmptyState />
           ) : (
-            <div className="p-3">
+            <div className="p-3 bg-[#000000]">
               <FileTree
                 structure={getProcessedFileStructure()}
                 onSelect={handleFileSelect}
-                searchTerm={searchTerm}
               />
             </div>
           )}

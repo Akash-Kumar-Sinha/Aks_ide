@@ -9,23 +9,20 @@ import {
   FaCog,
 } from "react-icons/fa";
 import type { FileStructure } from "../../../../pages/Playground";
-import useTheme from "../../../ui/lib/useTheme";
-import { Label } from "../../../ui/Label/Label";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 interface FileTreeProps {
   structure: FileStructure | null;
   path?: string;
   onSelect?: (fileName: string, absolutePath: string) => void;
-  searchTerm?: string;
 }
 
 const FileTree: React.FC<FileTreeProps> = ({
   structure,
   path = "",
   onSelect,
-  searchTerm = "",
 }) => {
-  const { theme } = useTheme();
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
     new Set(["/", path])
   );
@@ -153,12 +150,7 @@ const FileTree: React.FC<FileTreeProps> = ({
 
     Object.entries(structure).forEach(([key, value]) => {
       if (typeof value === "string") {
-        if (
-          !searchTerm ||
-          key.toLowerCase().includes(searchTerm.toLowerCase())
-        ) {
-          files[key] = value;
-        }
+        files[key] = value;
       } else if (typeof value === "object" && value !== null) {
         const entries = Object.entries(value);
         const isFileEntry =
@@ -168,41 +160,26 @@ const FileTree: React.FC<FileTreeProps> = ({
         if (isFileEntry) {
           entries.forEach(([absolutePath, fileName]) => {
             if (typeof fileName === "string") {
-              if (
-                !searchTerm ||
-                fileName.toLowerCase().includes(searchTerm.toLowerCase())
-              ) {
-                files[fileName] = absolutePath;
-              }
+              files[fileName] = absolutePath;
             }
           });
         } else {
-          if (
-            !searchTerm ||
-            key.toLowerCase().includes(searchTerm.toLowerCase())
-          ) {
-            directories[key] = value as FileStructure;
-          }
+          directories[key] = value as FileStructure;
         }
       }
     });
 
     return { directories, files };
-  }, [structure, searchTerm]);
+  }, [structure]);
 
   if (!structure || typeof structure !== "object") {
     return (
       <div className="flex flex-col items-center justify-center py-6 px-3 text-center">
-        <div
-          className="w-10 h-10 rounded-lg flex items-center justify-center mb-2"
-          style={{ backgroundColor: theme.secondaryColor }}
-        >
-          <FaFolder className="w-4 h-4" style={{ color: theme.textDimmed }} />
+        <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center mb-2">
+          <FaFolder className="w-4 h-4 text-zinc-400" />
         </div>
-        <p className="text-xs font-medium" style={{ color: theme.textDimmed }}>
-          No files found
-        </p>
-        <p className="text-xs mt-0.5" style={{ color: theme.textDimmed }}>
+        <p className="text-xs font-medium text-zinc-200">No files found</p>
+        <p className="text-xs mt-0.5 text-zinc-400">
           This directory appears to be empty
         </p>
       </div>
@@ -223,60 +200,34 @@ const FileTree: React.FC<FileTreeProps> = ({
         return (
           <div key={`dir-${dirName}`} className="select-none">
             <div
-              className="flex items-center gap-1.5 cursor-pointer px-1.5 py-1 rounded-md transition-all duration-150 group border border-transparent"
+              className={cn(
+                "flex items-center gap-1.5 cursor-pointer px-1.5 py-1 rounded-md transition-all duration-150",
+                "hover:bg-zinc-700 hover:text-zinc-200 border border-transparent hover:border-zinc-600"
+              )}
               onClick={() => toggleFolder(currentPath)}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = theme.accentColor;
-                e.currentTarget.style.borderColor = theme.accentColor + "50";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "transparent";
-                e.currentTarget.style.borderColor = "transparent";
-              }}
             >
               <div className="flex items-center gap-1.5 min-w-0 flex-1">
                 {isExpanded ? (
-                  <FaFolderOpen
-                    className="flex-shrink-0 w-3 h-3 transition-colors"
-                    style={{ color: theme.primaryColor }}
-                  />
+                  <FaFolderOpen className="flex-shrink-0 w-3 h-3 transition-colors text-blue-400" />
                 ) : (
-                  <FaFolder
-                    className="flex-shrink-0 w-3 h-3 transition-colors"
-                    style={{ color: theme.primaryColor }}
-                  />
+                  <FaFolder className="flex-shrink-0 w-3 h-3 transition-colors text-blue-400" />
                 )}
                 <span
-                  className="truncate text-xs font-medium transition-colors"
-                  style={{ color: theme.textColor }}
+                  className="truncate text-xs font-medium transition-colors text-zinc-200"
                   title={dirName}
                 >
                   {dirName}
                 </span>
               </div>
-              <div
-                className="w-1 h-1 rounded-full transition-all duration-200"
-                style={{
-                  backgroundColor: isExpanded
-                    ? theme.primaryColor
-                    : theme.textDimmed,
-                  opacity: isExpanded ? 1 : 0,
-                }}
-              />
+              <div className="w-1 h-1 rounded-full bg-blue-400 opacity-60" />
             </div>
 
             {isExpanded && (
-              <div
-                className="ml-3 mt-0.5 pl-2 space-y-0.5 relative"
-                style={{
-                  borderLeft: `1px solid ${theme.secondaryColor}`,
-                }}
-              >
+              <div className="ml-3 mt-0.5 pl-2 space-y-0.5 relative border-l border-zinc-600/30">
                 <FileTree
                   structure={dirContent}
                   path={currentPath}
                   onSelect={onSelect}
-                  searchTerm={searchTerm}
                 />
               </div>
             )}
@@ -293,95 +244,43 @@ const FileTree: React.FC<FileTreeProps> = ({
         return (
           <div
             key={`file-${fileName}`}
-            className={`flex items-center gap-1.5 px-1.5 py-1 rounded-md transition-all duration-150 
-                       group border border-transparent ${
-                         isEllipsis ? "cursor-default" : "cursor-pointer"
-                       }`}
-            style={{
-              color: isEllipsis ? theme.textDimmed : theme.textColor,
-            }}
+            className={cn(
+              "flex items-center gap-1.5 px-1.5 py-1 rounded-md transition-all duration-150 border border-transparent",
+              isEllipsis
+                ? "cursor-default text-zinc-400"
+                : "cursor-pointer hover:bg-zinc-700 hover:text-zinc-200 hover:border-zinc-600"
+            )}
             onClick={() =>
               !isEllipsis && onSelect && onSelect(fileName, absolutePath)
             }
-            onMouseEnter={(e) => {
-              if (!isEllipsis) {
-                e.currentTarget.style.backgroundColor = theme.textDimmed + "20";
-                e.currentTarget.style.borderColor = theme.textDimmed + "30";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isEllipsis) {
-                e.currentTarget.style.backgroundColor = "transparent";
-                e.currentTarget.style.borderColor = "transparent";
-              }
-            }}
           >
             <div className="flex items-center gap-1.5 min-w-0 flex-1">
               <FileIcon
-                className="flex-shrink-0 w-3 h-3 transition-colors"
-                style={{ color: isEllipsis ? theme.textDimmed : fileColor }}
+                className={cn(
+                  "flex-shrink-0 w-3 h-3 transition-colors",
+                  isEllipsis ? "text-zinc-400" : fileColor
+                )}
               />
               <span
-                className={`truncate text-xs transition-colors ${
-                  isEllipsis ? "italic" : "font-medium"
-                }`}
-                style={{
-                  color: isEllipsis ? theme.textDimmed : theme.textColor,
-                }}
+                className={cn(
+                  "truncate text-xs transition-colors",
+                  isEllipsis ? "italic text-zinc-400" : "font-medium"
+                )}
                 title={`${fileName} → ${absolutePath}`}
               >
                 {fileName}
               </span>
             </div>
             {!isEllipsis && (
-              <div
-                className="w-0.5 h-0.5 rounded-full transition-opacity duration-200 opacity-0 group-hover:opacity-100"
-                style={{ backgroundColor: theme.textDimmed }}
-              />
+              <div className="w-0.5 h-0.5 rounded-full bg-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
             )}
           </div>
         );
       })}
 
       {sortedDirectories.length === 0 && sortedFileNames.length === 0 && (
-        <Label dimmed scale="sm">
-          No files or folders to display
-        </Label>
+        <Label className="text-zinc-400">No files or folders to display</Label>
       )}
-
-      {searchTerm &&
-        sortedDirectories.length === 0 &&
-        sortedFileNames.length === 0 &&
-        structure &&
-        Object.keys(structure).length > 0 && (
-          <div
-            className="flex flex-col items-center justify-center py-4 px-3 text-center 
-                       rounded-lg border mt-1"
-            style={{
-              backgroundColor: theme.warningColor + "20",
-              borderColor: theme.warningColor + "50",
-            }}
-          >
-            <div
-              className="w-8 h-8 rounded-md flex items-center justify-center mb-1.5"
-              style={{ backgroundColor: theme.warningColor + "30" }}
-            >
-              <FaFile
-                className="w-3.5 h-3.5"
-                style={{ color: theme.warningColor }}
-              />
-            </div>
-            <p
-              className="text-xs font-medium"
-              style={{ color: theme.warningColor }}
-            >
-              No matches found
-            </p>
-            <p className="text-xs mt-0.5" style={{ color: theme.textDimmed }}>
-              Try adjusting your search term: "{searchTerm}"
-            </p>
-          </div>
-        )}
     </div>
   );
 };

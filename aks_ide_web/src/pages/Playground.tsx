@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import Terminal from "../components/Playground/Terminal";
 import socket from "../utils/Socket";
 import useUserProfile from "../utils/useUserProfile";
-import Sidebar from "../components/Playground/Sidebar/Sidebar";
+import Sidebar from "../components/Playground/Sidebar/IdeSidebar";
 import CodeEditor from "../components/Playground/CodeEditor";
 
 export type FileStructure = {
@@ -94,35 +94,31 @@ const Playground = () => {
   }, []);
 
   return (
-    <div className="flex flex-col w-full h-screen overflow-hidden">
-      <div className="flex flex-1 min-h-0 h-3/5">
-        <div className="flex-shrink-0">
-          <Sidebar
-            toggleFullScreen={toggleFullScreen}
-            isFullScreen={isFullScreen}
-            fileStructure={fileStructure}
-            explorerloadingStatus={explorerloadingStatus}
-            handleSelect={handleSelect}
-            setSelectedFileAbsolutePath={setSelectedFileAbsolutePath}
-          />
-        </div>
+    <div className="flex w-full h-screen overflow-hidden bg-[#000000]">
+      <Sidebar
+        toggleFullScreen={toggleFullScreen}
+        isFullScreen={isFullScreen}
+        fileStructure={fileStructure}
+        explorerloadingStatus={explorerloadingStatus}
+        handleSelect={handleSelect}
+        setSelectedFileAbsolutePath={setSelectedFileAbsolutePath}
+      />
 
-        <div className="flex-1 min-w-0">
-          <CodeEditor
-            selectedFileAbsolutePath={selectedFileAbsolutePath}
-            selectedFile={selectedFile}
-            onSaveStatusChange={handleSaveStatusChange}
-          />
-        </div>
-      </div>
-
-      <div className="flex-shrink-0 h-2/5 min-h-[300px]">
-        <Terminal
-          saveStatus={saveStatus}
-          openRepo={openRepo}
-          explorerloadingStatus={explorerloadingStatus}
+      <div className="flex flex-col flex-1 min-w-0">
+        <CodeEditor
+          selectedFileAbsolutePath={selectedFileAbsolutePath}
           selectedFile={selectedFile}
+          onSaveStatusChange={handleSaveStatusChange}
         />
+
+        <div className="flex-shrink-0 h-2/5 min-h-[300px] border-t border-zinc-800 shadow-lg">
+          <Terminal
+            saveStatus={saveStatus}
+            openRepo={openRepo}
+            explorerloadingStatus={explorerloadingStatus}
+            selectedFile={selectedFile}
+          />
+        </div>
       </div>
     </div>
   );
