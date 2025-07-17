@@ -1,27 +1,23 @@
-# -------- Build Stage --------
-FROM rust:1.84 AS builder
+FROM lukemathwalker/cargo-chef:latest-rust-1 AS chef
 
 WORKDIR /usr/src/app
 
-COPY Cargo.toml Cargo.lock ./
-RUN mkdir src && echo "fn main() {}" > src/main.rs
-RUN cargo build --release && rm -r src
+FROM chef AS planner
+COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
+
+FROM chef AS builder 
+COPY --from=planner /usr/src/app/recipe.json recipe.json
 
 COPY . .
 RUN cargo build --release
 
-# -------- Runtime Stage --------
 FROM debian:bookworm-slim
-
 RUN apt-get update && apt-get install -y \
-    libssl-dev \
     ca-certificates \
- && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app
-
-COPY --from=builder /usr/src/app/target/release/backend_ide .
-
+    libssl3 \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /usr/src/app
 EXPOSE 8000
-
-CMD ["./backend_ide"]
+COPY --from=builder /usr/src/app/target/release/backend_ide /usr/local/bin
+ENTRYPOINT ["/usr/local/bin/backend_ide"]
