@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use bollard::container::{Config, CreateContainerOptions, NetworkingConfig, StartContainerOptions};
 use bollard::image::CreateImageOptions;
+use bollard::models::HostConfig;
 use bollard::secret::EndpointSettings;
 use bollard::Docker;
 use futures_util::stream::TryStreamExt;
@@ -75,6 +76,10 @@ pub async fn create_container(
         attach_stdout: Some(true),
         attach_stderr: Some(true),
         open_stdin: Some(true),
+        host_config: Some(HostConfig {
+            publish_all_ports: Some(true),
+            ..Default::default()
+        }),
         // networking_config: Some(NetworkingConfig {
         //     endpoints_config: HashMap::from([(
         //         "host",

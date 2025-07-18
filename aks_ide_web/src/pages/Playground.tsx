@@ -111,7 +111,7 @@ const Playground = () => {
           onSaveStatusChange={handleSaveStatusChange}
         />
 
-        <div className="flex-shrink-0 h-2/5 min-h-[300px] border-t border-zinc-800 shadow-lg">
+        <div className="flex-shrink-0 h-[40vh] min-h-[300px] max-h-[50vh] border-t border-zinc-800 shadow-lg">
           <Terminal
             saveStatus={saveStatus}
             openRepo={openRepo}

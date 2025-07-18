@@ -14,6 +14,7 @@ import type { SaveStatus } from "../../pages/Playground";
 import useUserProfile from "../../utils/useUserProfile";
 import socket from "../../utils/Socket";
 import { Button } from "../ui/button";
+import { ScrollArea } from "../ui/scroll-area";
 
 interface TerminalProps {
   openRepo: () => void;
@@ -31,6 +32,7 @@ const Terminal: React.FC<TerminalProps> = ({
   const terminalRef = useRef<HTMLDivElement>(null);
   const terminalInstance = useRef<XTerminal | null>(null);
   const fitAddon = useRef<FitAddon | null>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const { userProfile: user, loading } = useUserProfile();
   const [connected, setConnected] = useState(false);
@@ -46,6 +48,25 @@ const Terminal: React.FC<TerminalProps> = ({
     }>
   >([]);
   const [loadingMessage, setLoadingMessage] = useState("Initializing terminal");
+
+  // Auto scroll to bottom function
+  const scrollToBottom = useCallback(() => {
+    if (scrollAreaRef.current) {
+      // Try multiple viewport selectors to ensure compatibility
+      const viewport =
+        scrollAreaRef.current.querySelector(
+          "[data-radix-scroll-area-viewport]"
+        ) ||
+        scrollAreaRef.current.querySelector(
+          '[data-slot="scroll-area-viewport"]'
+        ) ||
+        scrollAreaRef.current.querySelector(".scroll-area-viewport");
+
+      if (viewport) {
+        viewport.scrollTop = viewport.scrollHeight;
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const handleConnect = () => {
@@ -91,13 +112,16 @@ const Terminal: React.FC<TerminalProps> = ({
             if (socket.connected && user?.email) {
               socket.emit("terminal_resize", { rows, cols, email: user.email });
             }
+
+            // Auto scroll to bottom after resize
+            setTimeout(() => scrollToBottom(), 50);
           }
         }, 50);
       } catch (err) {
         console.error("Error resizing terminal:", err);
       }
     }
-  }, [user, terminalActive]);
+  }, [user, terminalActive, scrollToBottom]);
 
   const addMessage = useCallback(
     (
@@ -120,6 +144,8 @@ const Terminal: React.FC<TerminalProps> = ({
           } else {
             terminalInstance.current.write(new Uint8Array(content));
           }
+          // Auto scroll to bottom after writing content
+          setTimeout(() => scrollToBottom(), 50);
         } catch (error) {
           console.error("Error writing to terminal:", error);
         }
@@ -141,7 +167,7 @@ const Terminal: React.FC<TerminalProps> = ({
         }
       }
     },
-    [terminalActive, terminalReady]
+    [terminalActive, terminalReady, scrollToBottom]
   );
 
   useEffect(() => {
@@ -239,8 +265,11 @@ const Terminal: React.FC<TerminalProps> = ({
 
       setPendingMessages([]);
       setLoadingMessage("Terminal ready");
+
+      // Auto scroll to bottom after processing pending messages
+      setTimeout(() => scrollToBottom(), 100);
     }
-  }, [terminalActive, terminalReady, pendingMessages]);
+  }, [terminalActive, terminalReady, pendingMessages, scrollToBottom]);
 
   useEffect(() => {
     if (!user || !terminalRef.current || terminalInstance.current) return;
@@ -281,6 +310,8 @@ const Terminal: React.FC<TerminalProps> = ({
       smoothScrollDuration: 150,
       convertEol: true,
       disableStdin: false,
+      scrollOnUserInput: true,
+      rightClickSelectsWord: true,
     });
 
     const fit = new FitAddon();
@@ -291,6 +322,33 @@ const Terminal: React.FC<TerminalProps> = ({
       terminal.open(terminalRef.current);
       terminal.focus();
       terminalInstance.current = terminal;
+
+      // Hide xterm default scrollbar and ensure proper sizing
+      const xtermViewport =
+        terminalRef.current.querySelector(".xterm-viewport");
+      if (xtermViewport) {
+        const viewport = xtermViewport as HTMLElement;
+        viewport.style.scrollbarWidth = "none";
+        viewport.style.setProperty("-ms-overflow-style", "none");
+        viewport.style.overflowY = "hidden";
+      }
+
+      // Add CSS to hide webkit scrollbar
+      const style = document.createElement("style");
+      style.textContent = `
+        .xterm-viewport::-webkit-scrollbar {
+          display: none;
+        }
+        .xterm-viewport {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+          overflow-y: hidden !important;
+        }
+        .xterm {
+          height: 100% !important;
+        }
+      `;
+      document.head.appendChild(style);
 
       console.log("Terminal opened successfully");
 
@@ -316,6 +374,9 @@ const Terminal: React.FC<TerminalProps> = ({
           data: data,
           email: user.email,
         });
+
+        // Auto scroll to bottom when user types
+        setTimeout(() => scrollToBottom(), 50);
       });
 
       terminal.onSelectionChange(() => {
@@ -327,6 +388,8 @@ const Terminal: React.FC<TerminalProps> = ({
 
       setTimeout(() => {
         handleResizeTerminal();
+        // Initial scroll to bottom
+        scrollToBottom();
       }, 200);
 
       console.log("Terminal initialization complete");
@@ -336,8 +399,15 @@ const Terminal: React.FC<TerminalProps> = ({
 
     return () => {
       console.log("Terminal component unmounting");
+      // Clean up styles
+      const styles = document.querySelectorAll("style");
+      styles.forEach((style) => {
+        if (style.textContent?.includes(".xterm-viewport::-webkit-scrollbar")) {
+          style.remove();
+        }
+      });
     };
-  }, [user, handleResizeTerminal, terminalActive]);
+  }, [user, handleResizeTerminal, terminalActive, scrollToBottom]);
 
   useEffect(() => {
     if (terminalInstance.current && terminalActive) {
@@ -348,6 +418,49 @@ const Terminal: React.FC<TerminalProps> = ({
       return () => clearTimeout(timeoutId);
     }
   }, [handleResizeTerminal, terminalActive]);
+
+  // Add ResizeObserver to handle container size changes
+  useEffect(() => {
+    if (terminalRef.current && terminalActive) {
+      const resizeObserver = new ResizeObserver(() => {
+        // Debounce resize calls
+        const timeoutId = setTimeout(() => {
+          handleResizeTerminal();
+        }, 100);
+
+        return () => clearTimeout(timeoutId);
+      });
+
+      resizeObserver.observe(terminalRef.current);
+
+      return () => {
+        resizeObserver.disconnect();
+      };
+    }
+  }, [terminalActive, handleResizeTerminal]);
+
+  // Add MutationObserver to detect terminal content changes and auto-scroll
+  useEffect(() => {
+    if (terminalRef.current && terminalActive && terminalReady) {
+      const terminalScreen = terminalRef.current.querySelector(".xterm-screen");
+      if (terminalScreen) {
+        const mutationObserver = new MutationObserver(() => {
+          // Auto scroll to bottom when terminal content changes
+          setTimeout(() => scrollToBottom(), 10);
+        });
+
+        mutationObserver.observe(terminalScreen, {
+          childList: true,
+          subtree: true,
+          characterData: true,
+        });
+
+        return () => {
+          mutationObserver.disconnect();
+        };
+      }
+    }
+  }, [terminalActive, terminalReady, scrollToBottom]);
 
   useEffect(() => {
     const handleWindowResize = () => {
@@ -544,47 +657,54 @@ const Terminal: React.FC<TerminalProps> = ({
     </div>
   );
   const LoadingCard = () => (
-    <div className="max-h-full overflow-y-auto bg-[#000000] border border-[#1a1a1a] rounded-lg">
+    <div className="h-full bg-[#000000] border border-[#1a1a1a] rounded-lg flex flex-col">
       <TerminalHeader />
-      <div className="flex flex-col items-center justify-center h-full bg-[#000000] p-6">
-        <div className="flex flex-col items-center space-y-4 max-w-md mx-auto px-4 text-[#808080]">
-          <div className="w-8 h-8 rounded-md flex items-center justify-center bg-[#1a1a1a]">
-            <TerminalIcon className="w-4 h-4 text-[#569cd6]" />
-          </div>
-          <Loading
-            variant="default"
-            scale="lg"
-            pattern="pulse"
-            loadingMessage={loadingMessage}
-          />
+      <div className="flex-1 overflow-hidden">
+        <ScrollArea className="h-full bg-[#000000]">
+          <div className="flex flex-col items-center justify-center h-full p-6">
+            <div className="flex flex-col items-center space-y-4 max-w-md mx-auto px-4 text-[#808080]">
+              <div className="w-8 h-8 rounded-md flex items-center justify-center bg-[#1a1a1a]">
+                <TerminalIcon className="w-4 h-4 text-[#569cd6]" />
+              </div>
+              <Loading
+                variant="default"
+                scale="lg"
+                pattern="pulse"
+                loadingMessage={loadingMessage}
+              />
 
-          <div className="text-xs text-center text-[#808080]">
-            Connected: {connected ? "✓" : "✗"} | Active:{" "}
-            {terminalActive ? "✓" : "✗"} | Ready: {terminalReady ? "✓" : "✗"}
-          </div>
+              <div className="text-xs text-center text-[#808080]">
+                Connected: {connected ? "✓" : "✗"} | Active:{" "}
+                {terminalActive ? "✓" : "✗"} | Ready:{" "}
+                {terminalReady ? "✓" : "✗"}
+              </div>
 
-          {pendingMessages.length > 0 && (
-            <div className="mt-4 space-y-2 w-full max-h-32 overflow-y-auto">
-              {pendingMessages.slice(-3).map((message, index) => (
-                <div
-                  key={`${message.timestamp}-${index}`}
-                  className={`text-xs p-2 rounded border-l-2 ${
-                    message.type === "error"
-                      ? "bg-[#1a1a1a] border-l-[#f14c4c] text-[#f14c4c]"
-                      : message.type === "success"
-                      ? "bg-[#1a1a1a] border-l-[#4ec9b0] text-[#4ec9b0]"
-                      : "bg-[#1a1a1a] border-l-[#ce9178] text-[#ce9178]"
-                  }`}
-                >
-                  <span className="font-medium capitalize">
-                    {message.type}:
-                  </span>{" "}
-                  {message.content}
+              {pendingMessages.length > 0 && (
+                <div className="mt-4 space-y-2 w-full">
+                  <ScrollArea className="max-h-32">
+                    {pendingMessages.slice(-3).map((message, index) => (
+                      <div
+                        key={`${message.timestamp}-${index}`}
+                        className={`text-xs p-2 rounded border-l-2 mb-2 ${
+                          message.type === "error"
+                            ? "bg-[#1a1a1a] border-l-[#f14c4c] text-[#f14c4c]"
+                            : message.type === "success"
+                            ? "bg-[#1a1a1a] border-l-[#4ec9b0] text-[#4ec9b0]"
+                            : "bg-[#1a1a1a] border-l-[#ce9178] text-[#ce9178]"
+                        }`}
+                      >
+                        <span className="font-medium capitalize">
+                          {message.type}:
+                        </span>{" "}
+                        {message.content}
+                      </div>
+                    ))}
+                  </ScrollArea>
                 </div>
-              ))}
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        </ScrollArea>
       </div>
     </div>
   );
@@ -592,28 +712,32 @@ const Terminal: React.FC<TerminalProps> = ({
   // Loading state while fetching user profile
   if (loading) {
     return (
-      <div className="max-h-full overflow-y-auto bg-[#000000] border border-[#1a1a1a] rounded-lg">
+      <div className="h-full bg-[#000000] border border-[#1a1a1a] rounded-lg flex flex-col">
         <div className="border-b border-[#1a1a1a] p-3">
           <div className="flex items-center gap-2">
             <TerminalIcon className="w-4 h-4 text-[#569cd6]" />
             <h3 className="text-sm font-medium text-[#cccccc]">Terminal</h3>
           </div>
         </div>
-        <div className="flex flex-col items-center justify-center h-full p-6">
-          <div className="flex flex-col items-center space-y-4">
-            <div className="w-8 h-8 rounded-md flex items-center justify-center bg-[#1a1a1a]">
-              <KeyRound className="w-4 h-4 text-[#569cd6]" />
+        <div className="flex-1 overflow-hidden">
+          <ScrollArea className="h-full bg-[#000000]">
+            <div className="flex flex-col items-center justify-center h-full p-6">
+              <div className="flex flex-col items-center space-y-4">
+                <div className="w-8 h-8 rounded-md flex items-center justify-center bg-[#1a1a1a]">
+                  <KeyRound className="w-4 h-4 text-[#569cd6]" />
+                </div>
+                <Loading
+                  variant="default"
+                  scale="lg"
+                  pattern="pulse"
+                  loadingMessage="Loading user profile..."
+                />
+                <p className="text-sm text-[#808080]">
+                  Please wait while we initialize your workspace
+                </p>
+              </div>
             </div>
-            <Loading
-              variant="default"
-              scale="lg"
-              pattern="pulse"
-              loadingMessage="Loading user profile..."
-            />
-            <p className="text-sm text-[#808080]">
-              Please wait while we initialize your workspace
-            </p>
-          </div>
+          </ScrollArea>
         </div>
       </div>
     );
@@ -622,21 +746,25 @@ const Terminal: React.FC<TerminalProps> = ({
   // No user authenticated
   if (!user) {
     return (
-      <div className="h-full bg-[#000000] border border-[#1a1a1a] rounded-lg">
-        <div className="flex flex-col items-center justify-center h-full">
-          <div className="text-center space-y-4 p-8">
-            <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center bg-[#569cd6]">
-              <KeyRound className="w-7 h-7 text-white" />
+      <div className="h-full bg-[#000000] border border-[#1a1a1a] rounded-lg flex flex-col">
+        <div className="flex-1 overflow-hidden">
+          <ScrollArea className="h-full bg-[#000000]">
+            <div className="flex flex-col items-center justify-center h-full">
+              <div className="text-center space-y-4 p-8">
+                <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center bg-[#569cd6]">
+                  <KeyRound className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl mb-2 text-[#cccccc]">
+                    Authentication Required
+                  </h3>
+                  <p className="max-w-sm text-[#808080]">
+                    Please sign in to access the terminal and start coding
+                  </p>
+                </div>
+              </div>
             </div>
-            <div>
-              <h3 className="text-xl mb-2 text-[#cccccc]">
-                Authentication Required
-              </h3>
-              <p className="max-w-sm text-[#808080]">
-                Please sign in to access the terminal and start coding
-              </p>
-            </div>
-          </div>
+          </ScrollArea>
         </div>
       </div>
     );
@@ -644,10 +772,12 @@ const Terminal: React.FC<TerminalProps> = ({
 
   if (terminalActive && terminalReady) {
     return (
-      <div className="bg-[#000000] border border-[#1a1a1a] rounded-lg">
+      <div className="h-full bg-[#000000] border border-[#1a1a1a] rounded-lg flex flex-col">
         <TerminalHeader />
-        <div className="bg-[#000000] px-1">
-          <div ref={terminalRef} className="w-full h-full bg-[#000000]" />
+        <div className="flex-1 overflow-hidden">
+          <ScrollArea ref={scrollAreaRef} className="h-full bg-[#000000]">
+            <div ref={terminalRef} className="w-full min-h-full bg-[#000000]" />
+          </ScrollArea>
         </div>
       </div>
     );
