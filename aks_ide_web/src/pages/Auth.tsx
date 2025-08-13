@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
 import { LogIn } from "lucide-react";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
@@ -129,23 +130,31 @@ const Auth = () => {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button className="rounded-full text-xs bg-blue-500 hover:bg-blue-600 text-white">
-          <LogIn />
-        </Button>
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
+          <Button className="rounded-full text-xs bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90 text-[var(--color-primary-foreground)]">
+            <LogIn />
+          </Button>
+        </motion.div>
       </DialogTrigger>
 
-      <DialogContent className="bg-[#000000] border-[#333333] max-w-md">
+      <DialogContent className="bg-[var(--color-background)] border-[var(--color-border)] max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-[#cccccc]">Authentication</DialogTitle>
-          <DialogDescription className="text-[#808080]">
+          <DialogTitle className="text-[var(--color-foreground)]">
+            Authentication
+          </DialogTitle>
+          <DialogDescription className="text-[var(--color-muted-foreground)]">
             Please login to access this feature.
           </DialogDescription>
         </DialogHeader>
 
         {message && (
-          <p className="text-[#f85149] font-medium text-xs text-center bg-[#1a1a1a] border border-[#f85149]/30 rounded p-2">
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-[var(--color-destructive)] font-medium text-xs text-center bg-[var(--color-background)] border border-[var(--color-destructive)]/30 rounded p-2"
+          >
             {message}
-          </p>
+          </motion.p>
         )}
 
         {loading ? (
@@ -161,7 +170,7 @@ const Auth = () => {
               <div className="flex flex-col gap-2">
                 <label
                   htmlFor="email"
-                  className="text-sm font-medium text-[#cccccc]"
+                  className="text-sm font-medium text-[var(--color-foreground)]"
                 >
                   Email
                 </label>
@@ -173,12 +182,12 @@ const Auth = () => {
                   required={true}
                   disabled={status === "SENT"}
                   onChange={handleEmailChange}
-                  className={`bg-[#333333] border-[#333333] text-[#cccccc] placeholder-[#808080] focus:border-[#569cd6] focus:ring-0 ${
-                    errors.email ? "border-red-500" : ""
+                  className={`bg-[var(--color-input)] border-[var(--color-border)] text-[var(--color-foreground)] placeholder-[var(--color-muted-foreground)] focus:border-[var(--color-primary)] focus:ring-0 ${
+                    errors.email ? "border-[var(--color-destructive)]" : ""
                   }`}
                 />
                 {errors.email && (
-                  <p className="text-red-400 text-xs">
+                  <p className="text-[var(--color-destructive)] text-xs">
                     {errors.email.message as string}
                   </p>
                 )}
@@ -190,7 +199,7 @@ const Auth = () => {
                 <div className="flex flex-col gap-2">
                   <label
                     htmlFor="password"
-                    className="text-sm font-medium text-[#cccccc]"
+                    className="text-sm font-medium text-[var(--color-foreground)]"
                   >
                     Password
                   </label>
@@ -201,33 +210,43 @@ const Auth = () => {
                     placeholder="Enter Password"
                     required={true}
                     onChange={handlePasswordChange}
-                    className={`bg-[#333333] border-[#333333] text-[#cccccc] placeholder-[#808080] focus:border-[#569cd6] focus:ring-0 ${
-                      errors.password ? "border-red-500" : ""
+                    className={`bg-[var(--color-input)] border-[var(--color-border)] text-[var(--color-foreground)] placeholder-[var(--color-muted-foreground)] focus:border-[var(--color-primary)] focus:ring-0 ${
+                      errors.password ? "border-[var(--color-destructive)]" : ""
                     }`}
                   />
                   {errors.password && (
-                    <p className="text-red-400 text-xs">
+                    <p className="text-[var(--color-destructive)] text-xs">
                       {errors.password.message as string}
                     </p>
                   )}
                 </div>
-                <Button
-                  type="submit"
-                  className="w-full py-3 bg-[#569cd6] text-white font-semibold rounded-lg hover:bg-[#4a8bc2] transition-all duration-300 shadow-md"
+                <motion.div
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
                 >
-                  Login
-                </Button>
+                  <Button
+                    type="submit"
+                    className="w-full py-3 bg-[var(--color-primary)] text-[var(--color-primary-foreground)] font-semibold rounded-lg hover:bg-[var(--color-primary)]/90 transition-all duration-300 shadow-md"
+                  >
+                    Login
+                  </Button>
+                </motion.div>
               </>
             )}
 
             {status !== "PASSWORD" && (
-              <Button
-                type="button"
-                onClick={sentVerificationLink}
-                className="w-full py-3 bg-[#569cd6] text-white font-semibold rounded-lg hover:bg-[#4a8bc2] transition-all duration-300 shadow-md"
+              <motion.div
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
               >
-                {status === "SENT" ? "Next" : "Send Verification Link"}
-              </Button>
+                <Button
+                  type="button"
+                  onClick={sentVerificationLink}
+                  className="w-full py-3 bg-[var(--color-primary)] text-[var(--color-primary-foreground)] font-semibold rounded-lg hover:bg-[var(--color-primary)]/90 transition-all duration-300 shadow-md"
+                >
+                  {status === "SENT" ? "Next" : "Send Verification Link"}
+                </Button>
+              </motion.div>
             )}
           </form>
         )}

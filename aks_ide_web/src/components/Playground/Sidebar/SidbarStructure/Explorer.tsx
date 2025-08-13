@@ -107,14 +107,14 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
     };
 
     const EmptyState = () => (
-      <div className="flex flex-col items-center justify-center h-64 text-center p-6 bg-[#000000]">
-        <div className="w-16 h-16 rounded-2xl bg-[#569cd6] flex items-center justify-center mb-4 shadow-lg">
-          <FolderOpen className="w-8 h-8 text-white" />
+      <div className="flex flex-col items-center justify-center h-64 text-center p-6 bg-[var(--color-card)]">
+        <div className="w-16 h-16 rounded-2xl bg-[var(--color-primary)] flex items-center justify-center mb-4 shadow-lg">
+          <FolderOpen className="w-8 h-8 text-[var(--color-primary-foreground)]" />
         </div>
-        <h3 className="text-lg font-semibold text-[#cccccc] mb-2">
+        <h3 className="text-lg font-semibold text-[var(--color-foreground)] mb-2">
           No Repository Loaded
         </h3>
-        <p className="text-[#808080] text-sm mb-6 max-w-sm">
+        <p className="text-[var(--color-muted-foreground)] text-sm mb-6 max-w-sm">
           Create a new project or load an existing repository to start exploring
           your files.
         </p>
@@ -124,12 +124,12 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
             <Input
               ref={projectName}
               placeholder="Project name"
-              className="flex-1 bg-[#333333] border-[#333333] text-[#cccccc] placeholder-[#808080] focus:border-[#569cd6] focus:ring-0"
+              className="flex-1 bg-[var(--color-input)] border-[var(--color-border)] text-[var(--color-foreground)] placeholder-[var(--color-muted-foreground)] focus:border-[var(--color-primary)] focus:ring-0"
             />
             <Button
               onClick={createTemplate}
               disabled={explorerloadingStatus}
-              className="px-4 bg-[#569cd6] hover:bg-[#4a8bc2] text-white disabled:opacity-50"
+              className="px-4 bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90 text-[var(--color-primary-foreground)] disabled:opacity-50"
             >
               <Plus className="w-4 h-4" />
             </Button>
@@ -147,7 +147,7 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
       </div>
     );
     const LoadingState = () => (
-      <div className="flex flex-col items-center justify-center text-center p-6 h-full bg-[#000000]">
+      <div className="flex flex-col items-center justify-center text-center p-6 h-full bg-[var(--color-card)]">
         <Loading
           variant="default"
           pattern="wave"
@@ -161,17 +161,17 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
       const fullPath = getCurrentDirectory();
 
       return (
-        <div className="px-4 py-3 border-b border-[#1a1a1a] bg-[#000000]">
+        <div className="px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-card)]">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 min-w-0 flex-1">
-              <FolderOpen className="w-4 h-4 flex-shrink-0 text-[#569cd6]" />
+              <FolderOpen className="w-4 h-4 flex-shrink-0 text-[var(--color-primary)]" />
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-sm truncate text-[#cccccc]">
+                <h3 className="font-semibold text-sm truncate text-[var(--color-foreground)]">
                   {displayName || "Project"}
                 </h3>
                 {fullPath && (
                   <p
-                    className="text-xs font-mono truncate mt-0.5 text-[#808080]"
+                    className="text-xs font-mono truncate mt-0.5 text-[var(--color-muted-foreground)]"
                     title={fullPath}
                   >
                     {fullPath}
@@ -187,7 +187,7 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
                 <Button
                   onClick={onRefresh}
                   disabled={explorerloadingStatus}
-                  className="h-7 w-7 p-0 disabled:opacity-50 bg-transparent text-[#cccccc] hover:bg-[#569cd6]/20"
+                  className="h-7 w-7 p-0 disabled:opacity-50 bg-transparent text-[var(--color-foreground)] hover:bg-[var(--color-primary)]/20"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                 </Button>
@@ -199,16 +199,16 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
     };
 
     return (
-      <div className="flex flex-col h-full bg-[#000000]">
+      <div className="flex flex-col h-full bg-[var(--color-card)]">
         {hasFileStructure() && <ProjectHeader />}
 
-        <div className="flex-1 overflow-auto custom-scrollbar bg-[#000000]">
+        <div className="flex-1 overflow-auto custom-scrollbar bg-[var(--color-card)]">
           {explorerloadingStatus && !hasFileStructure() ? (
             <LoadingState />
           ) : !hasFileStructure() ? (
             <EmptyState />
           ) : (
-            <div className="p-3 bg-[#000000]">
+            <div className="p-3 bg-[var(--color-card)]">
               <FileTree
                 structure={getProcessedFileStructure()}
                 onSelect={handleFileSelect}

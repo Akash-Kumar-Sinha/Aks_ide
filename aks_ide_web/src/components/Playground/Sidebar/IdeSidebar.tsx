@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useState, useRef } from "react";
 import { FaGithub, FaStickyNote } from "react-icons/fa";
 import { FoldersIcon } from "lucide-react";
 import { TiDocumentText } from "react-icons/ti";
@@ -6,6 +6,12 @@ import { MdFullscreen, MdFullscreenExit } from "react-icons/md";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { motion } from "framer-motion";
 
 import Explorer from "./SidbarStructure/Explorer";
 import GitBranch from "./SidbarStructure/GitBranch";
@@ -52,12 +58,11 @@ export function IdeSidebar({
   toggleFullScreen,
   isFullScreen,
   fileStructure,
-  explorerloadingStatus = false,
   handleSelect,
   setSelectedFileAbsolutePath,
 }: IdeSidebarProps) {
   const { userProfile } = useUserProfile();
-  const [activeView, setActiveView] = useState("explorer");
+  const [activeView, setActiveView] = useState<string | null>(null);
   const projectName = useRef<HTMLInputElement>(null);
 
   const createTemplate = () => {
@@ -72,10 +77,9 @@ export function IdeSidebar({
       case "explorer":
         return (
           <Explorer
-            projectName={projectName}
-            createTemplate={createTemplate}
             fileStructure={fileStructure}
-            explorerloadingStatus={explorerloadingStatus}
+            createTemplate={createTemplate}
+            explorerloadingStatus={false}
             handleSelect={handleSelect}
             setSelectedFileAbsolutePath={setSelectedFileAbsolutePath}
           />
@@ -89,77 +93,107 @@ export function IdeSidebar({
       case "profile":
         return <Profile />;
       default:
-        return null;
+        return (
+          <Explorer
+            fileStructure={fileStructure}
+            createTemplate={createTemplate}
+            explorerloadingStatus={false}
+            handleSelect={handleSelect}
+            setSelectedFileAbsolutePath={setSelectedFileAbsolutePath}
+          />
+        );
     }
   };
 
   return (
     <div className="flex h-full">
-      <div className="w-12 bg-[#000000] border-r border-[#1a1a1a] flex flex-col">
-        <div className="flex-1 py-2">
-          {sidebarItems.map((item) => (
-            <Button
-              key={item.id}
-              variant="ghost"
-              size="sm"
-              onClick={() => setActiveView(item.id)}
-              className={`w-full h-10 mb-1 text-[#808080] hover:text-[#cccccc] hover:bg-[#1a1a1a] ${
-                activeView === item.id ? "bg-blue-600 text-white" : ""
-              }`}
-              title={item.label}
+      <nav className="flex flex-col border-r border-[var(--color-border)] bg-[var(--color-background)] w-16 items-center py-4 gap-2">
+        {sidebarItems.map((item) => (
+          <Tooltip key={item.id}>
+            <TooltipTrigger asChild>
+              <motion.div whileHover={{ scale: 1.08 }}>
+                <Button
+                  variant={activeView === item.id ? "secondary" : "ghost"}
+                  size="icon"
+                  onClick={() => setActiveView(item.id)}
+                  className={`w-10 h-10 flex items-center justify-center ${
+                    activeView === item.id
+                      ? "bg-[var(--color-primary)] text-[var(--color-primary-foreground)] shadow-md"
+                      : "text-[var(--color-muted-foreground)] hover:text-[var(--color-primary)] hover:bg-[var(--color-accent)]/20"
+                  } transition-all duration-200`}
+                  aria-label={item.label}
+                >
+                  <item.icon className="h-5 w-5" />
+                </Button>
+              </motion.div>
+            </TooltipTrigger>
+            <TooltipContent
+              side="right"
+              className="bg-[var(--color-card)] text-[var(--color-card-foreground)]"
             >
-              <item.icon className="h-4 w-4" />
-            </Button>
-          ))}
-        </div>
-
-        <div className="border-t border-[#1a1a1a] py-2">
+              {item.label}
+            </TooltipContent>
+          </Tooltip>
+        ))}
+        <div className="mt-auto flex flex-col items-center gap-2">
           <Button
             variant="ghost"
-            size="sm"
+            size="icon"
             onClick={toggleFullScreen}
-            className="w-full h-10 mb-1 text-[#808080] hover:text-[#cccccc] hover:bg-[#1a1a1a]"
-            title={isFullScreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+            className="w-10 h-10 text-[var(--color-muted-foreground)] hover:text-[var(--color-primary)] hover:bg-[var(--color-accent)]/20"
+            aria-label={isFullScreen ? "Exit Fullscreen" : "Enter Fullscreen"}
           >
             {isFullScreen ? (
-              <MdFullscreenExit className="h-4 w-4" />
+              <MdFullscreenExit className="h-5 w-5" />
             ) : (
-              <MdFullscreen className="h-4 w-4" />
+              <MdFullscreen className="h-5 w-5" />
             )}
           </Button>
-
           {userProfile ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setActiveView("profile")}
-              className={`w-full h-10 text-[#808080] hover:text-[#cccccc] hover:bg-[#1a1a1a] ${
-                activeView === "profile" ? "bg-blue-600 text-white" : ""
-              }`}
-              title="Profile"
-            >
-              <Avatar className="h-4 w-4">
-                <AvatarImage
-                  src={userProfile.avatar}
-                  alt={userProfile.name || userProfile.email}
-                />
-                <AvatarFallback className="text-xs bg-[#1a1a1a] text-[#569cd6]">
-                  {(userProfile.name || userProfile.email)
-                    .charAt(0)
-                    .toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <motion.div whileHover={{ scale: 1.08 }}>
+                  <Button
+                    variant={activeView === "profile" ? "secondary" : "ghost"}
+                    size="icon"
+                    onClick={() => setActiveView("profile")}
+                    className={`w-10 h-10 flex items-center justify-center ${
+                      activeView === "profile"
+                        ? "bg-[var(--color-primary)] text-[var(--color-primary-foreground)] shadow-md"
+                        : "text-[var(--color-muted-foreground)] hover:text-[var(--color-primary)] hover:bg-[var(--color-accent)]/20"
+                    } transition-all duration-200`}
+                    aria-label="Profile"
+                  >
+                    <Avatar className="h-7 w-7">
+                      <AvatarImage
+                        src={userProfile.avatar}
+                        alt={userProfile.name || userProfile.email}
+                      />
+                      <AvatarFallback className="text-xs bg-[var(--color-accent)] text-[var(--color-primary)]">
+                        {(userProfile.name || userProfile.email)
+                          .charAt(0)
+                          .toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </motion.div>
+              </TooltipTrigger>
+              <TooltipContent
+                side="right"
+                className="bg-[var(--color-card)] text-[var(--color-card-foreground)]"
+              >
+                Profile
+              </TooltipContent>
+            </Tooltip>
           ) : (
             <div className="px-1">
               <Auth />
             </div>
           )}
         </div>
-      </div>
-
-      <div className="w-80 bg-[#1a1a1a] border-r border-[#333333] flex flex-col">
-        <div className="h-full overflow-hidden">{renderContent()}</div>
+      </nav>
+      <div className="w-[320px] p-0 bg-[var(--color-card)] border-r border-[var(--color-border)] shadow-lg h-full overflow-auto">
+        {renderContent()}
       </div>
     </div>
   );

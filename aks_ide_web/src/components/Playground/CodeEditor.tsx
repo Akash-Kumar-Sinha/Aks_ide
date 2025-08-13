@@ -166,10 +166,14 @@ const CodeEditor: React.FC<CodeProps> = React.memo(
             />
           </div>
         ) : (
-          <div className="flex items-center justify-center h-full w-full">
+          <div className="flex items-center justify-center h-full w-full bg-[var(--color-card)]">
             <div className="flex flex-col justify-center items-center gap-2">
-              <Label className="text-2xl">Aks IDE</Label>
-              <Label>Select a file to begin coding</Label>
+              <Label className="text-[var(--color-muted-foreground)] text-2xl">
+                Aks IDE
+              </Label>
+              <Label className="text-[var(--color-muted-foreground)]">
+                Select a file to begin coding
+              </Label>
             </div>
           </div>
         )}

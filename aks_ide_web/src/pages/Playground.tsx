@@ -4,6 +4,8 @@ import socket from "../utils/Socket";
 import useUserProfile from "../utils/useUserProfile";
 import Sidebar from "../components/Playground/Sidebar/IdeSidebar";
 import CodeEditor from "../components/Playground/CodeEditor";
+import { Card } from "@/components/ui/card";
+import { motion } from "framer-motion";
 
 export type FileStructure = {
   [key: string]: FileStructure | { [absolutePath: string]: string } | string;
@@ -94,7 +96,12 @@ const Playground = () => {
   }, []);
 
   return (
-    <div className="flex w-full h-screen overflow-hidden bg-[#000000]">
+    <motion.div
+      className="flex w-full h-screen overflow-hidden bg-[var(--color-background)]"
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+    >
       <Sidebar
         toggleFullScreen={toggleFullScreen}
         isFullScreen={isFullScreen}
@@ -103,24 +110,24 @@ const Playground = () => {
         handleSelect={handleSelect}
         setSelectedFileAbsolutePath={setSelectedFileAbsolutePath}
       />
-
-      <div className="flex flex-col flex-1 min-w-0">
-        <CodeEditor
-          selectedFileAbsolutePath={selectedFileAbsolutePath}
-          selectedFile={selectedFile}
-          onSaveStatusChange={handleSaveStatusChange}
-        />
-
-        <div className="flex-shrink-0 h-[40vh] min-h-[300px] max-h-[50vh] border-t border-zinc-800 shadow-lg">
+      <main className="flex flex-col flex-1 min-w-0">
+        <Card className="flex-1 min-h-0 p-0 bg-[var(--color-card)]">
+          <CodeEditor
+            selectedFileAbsolutePath={selectedFileAbsolutePath}
+            selectedFile={selectedFile}
+            onSaveStatusChange={handleSaveStatusChange}
+          />
+        </Card>
+        <Card className="flex-shrink-0 h-[40vh] min-h-[300px] max-h-[50vh] border-t border-[var(--color-border)] shadow-lg bg-[var(--color-card)]">
           <Terminal
             saveStatus={saveStatus}
             openRepo={openRepo}
             explorerloadingStatus={explorerloadingStatus}
             selectedFile={selectedFile}
           />
-        </div>
-      </div>
-    </div>
+        </Card>
+      </main>
+    </motion.div>
   );
 };
 

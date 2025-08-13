@@ -8,7 +8,6 @@ import {
 import { Terminal as XTerminal } from "xterm";
 import { FitAddon } from "xterm-addon-fit";
 import "xterm/css/xterm.css";
-
 import { Loading } from "../ui/Loading/Loading";
 import type { SaveStatus } from "../../pages/Playground";
 import useUserProfile from "../../utils/useUserProfile";
@@ -29,6 +28,7 @@ const Terminal: React.FC<TerminalProps> = ({
   selectedFile,
   saveStatus,
 }) => {
+  // ...existing code...
   const terminalRef = useRef<HTMLDivElement>(null);
   const terminalInstance = useRef<XTerminal | null>(null);
   const fitAddon = useRef<FitAddon | null>(null);
