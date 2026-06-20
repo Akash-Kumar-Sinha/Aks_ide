@@ -3,6 +3,7 @@ use nix::pty::{openpty, Winsize};
 use nix::sys::termios::{
     self, InputFlags, LocalFlags, OutputFlags, SetArg, SpecialCharacterIndices,
 };
+use regex::Regex;
 use socketioxide::extract::SocketRef;
 
 use std::fs::File;
@@ -11,47 +12,15 @@ use std::process::{Command, Stdio};
 use tokio::io::AsyncReadExt;
 use tokio::task;
 
-use crate::AppState;
+use crate::{
+    events,
+    state::{terminal_key, AppState},
+    types::{TerminalDataPayload, TerminalStatusPayload},
+};
 
-pub async fn pseudo_terminal(
-    s: &SocketRef,
-    docker_container_id: Option<String>,
-    state: AppState,
-    email: String,
-) -> Result<(), std::io::Error> {
-    let winsize = Winsize {
-        ws_row: 24,
-        ws_col: 80,
-        ws_xpixel: 0,
-        ws_ypixel: 0,
-    };
-
-    let pty = openpty(Some(&winsize), None).map_err(|e| {
-        println!("Failed to open PTY: {}", e);
-        std::io::Error::new(std::io::ErrorKind::Other, e)
-    })?;
-
-    let slave_name = unsafe {
-        let name_ptr = libc::ptsname(pty.master);
-        if name_ptr.is_null() {
-            println!("Could not get slave PTY name");
-            String::from("unknown")
-        } else {
-            std::ffi::CStr::from_ptr(name_ptr)
-                .to_string_lossy()
-                .into_owned()
-        }
-    };
-
-    println!(
-        "Created PTY: master={} slave={} name={}",
-        pty.master, pty.slave, slave_name
-    );
-
-    let mut termios = termios::tcgetattr(pty.slave).map_err(|e| {
-        println!("Failed to get termios: {}", e);
-        std::io::Error::new(std::io::ErrorKind::Other, e)
-    })?;
+fn configure_pty(slave_fd: i32) -> Result<(), std::io::Error> {
+    let mut termios = termios::tcgetattr(slave_fd)
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
 
     termios.input_flags.remove(
         InputFlags::ICRNL
@@ -64,258 +33,192 @@ pub async fn pseudo_terminal(
     termios
         .local_flags
         .remove(LocalFlags::ECHO | LocalFlags::ICANON | LocalFlags::ISIG | LocalFlags::IEXTEN);
-
     termios.control_chars[SpecialCharacterIndices::VMIN as usize] = 1;
     termios.control_chars[SpecialCharacterIndices::VTIME as usize] = 0;
 
-    termios::tcsetattr(pty.slave, SetArg::TCSANOW, &termios).map_err(|e| {
-        println!("Failed to set termios: {}", e);
-        std::io::Error::new(std::io::ErrorKind::Other, e)
-    })?;
-
-    let container_id = docker_container_id.unwrap_or_else(|| "default-container".to_string());
-
-    let docker_ps = Command::new("docker")
-        .args(["ps", "-q", "--filter", &format!("id={}", container_id)])
-        .output();
-
-    match docker_ps {
-        Ok(output) => {
-            if output.stdout.is_empty() {
-                println!(
-                    "Warning: Container {} doesn't appear to be running",
-                    container_id
-                );
-            } else {
-                println!("Container {} is running", container_id);
-            }
-        }
-        Err(e) => {
-            println!("Error checking container status: {}", e);
-        }
-    }
-
-    let master_fd = pty.master;
-    let slave_fd = pty.slave;
-
-    let master = unsafe { std::fs::File::from_raw_fd(libc::dup(master_fd)) };
-
-    {
-        let mut terminal_guard = state.terminal_mapping.lock().unwrap();
-        terminal_guard.insert(
-            email.clone(),
-            Some(master.try_clone().expect("Failed to clone master file")),
-        );
-    }
-
-    let shell_command = "/bin/bash";
-
-    let mut docker_command = Command::new("docker");
-    docker_command
-        .arg("exec")
-        .arg("-it")
-        .arg(&container_id)
-        .env("TERM", "xterm-256color")
-        .env("COLORTERM", "truecolor")
-        .env("LC_ALL", "C.UTF-8")
-        .arg(shell_command)
-        .stdin(unsafe { Stdio::from_raw_fd(libc::dup(slave_fd)) })
-        .stdout(unsafe { Stdio::from_raw_fd(libc::dup(slave_fd)) })
-        .stderr(unsafe { Stdio::from_raw_fd(libc::dup(slave_fd)) });
-
-    let mut child = match docker_command.spawn() {
-        Ok(child) => {
-            println!("Docker exec process started successfully");
-            child
-        }
-        Err(e) => {
-            println!("Failed to start docker exec: {}", e);
-            s.emit(
-                "terminal_error",
-                &format!("Failed to start docker exec: {}", e),
-            )
-            .ok();
-            return Err(e);
-        }
-    };
-
-    s.emit("terminal_success", "Terminal created successfully")
-        .ok();
-
-    let socket_clone = s.clone();
-    let email_clone = email.clone();
-    let master_clone = master.try_clone().expect("Failed to clone master file");
-
-    let _read_task = task::spawn(async move {
-        let mut buffer = [0u8; 4096];
-        let mut reader = tokio::fs::File::from_std(master_clone);
-
-        loop {
-            match reader.read(&mut buffer).await {
-                Ok(0) => {
-                    println!("Terminal session ended for {}", email_clone);
-                    socket_clone
-                        .emit("terminal_closed", "Terminal session ended")
-                        .ok();
-                    break;
-                }
-                Ok(n) => {
-                    if let Ok(text) = std::str::from_utf8(&buffer[0..n]) {
-                        socket_clone.emit("terminal_data", text).ok();
-                    } else {
-                        let mut valid_end = n;
-                        while valid_end > 0 {
-                            if let Ok(text) = std::str::from_utf8(&buffer[0..valid_end]) {
-                                socket_clone.emit("terminal_data", text).ok();
-                                break;
-                            }
-                            valid_end -= 1;
-                        }
-
-                        if valid_end == 0 {
-                            let hex_data = buffer[0..n]
-                                .iter()
-                                .map(|b| format!("\\x{:02x}", b))
-                                .collect::<Vec<String>>()
-                                .join("");
-                            println!("Received binary data for {}: {}", email_clone, hex_data);
-                        }
-                    }
-                }
-                Err(e) => {
-                    println!("Terminal read error for {}: {}", email_clone, e);
-                    socket_clone
-                        .emit("terminal_error", &format!("Terminal read error: {}", e))
-                        .ok();
-                    break;
-                }
-            }
-        }
-    });
-
-    let socket_clone2 = s.clone();
-    let email_clone2 = email.clone();
-    let state_clone = state.clone();
-
-    task::spawn(async move {
-        let exit_status = child.wait();
-
-        match exit_status {
-            Ok(status) => {
-                println!(
-                    "Docker process exited with status: {} for {}",
-                    status, email_clone2
-                );
-            }
-            Err(e) => {
-                println!(
-                    "Error waiting for docker process for {}: {}",
-                    email_clone2, e
-                );
-            }
-        }
-
-        {
-            let mut terminal_guard = state_clone.terminal_mapping.lock().unwrap();
-            terminal_guard.remove(&email_clone2);
-        }
-
-        socket_clone2
-            .emit("terminal_closed", "Docker process terminated")
-            .ok();
-    });
-
-    pseudo_back_terminal(state, email).await?;
-
-    Ok(())
+    termios::tcsetattr(slave_fd, SetArg::TCSANOW, &termios)
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
 }
 
-pub async fn pseudo_back_terminal(state: AppState, email: String) -> Result<(), std::io::Error> {
-    let winsize = Winsize {
-        ws_row: 24,
-        ws_col: 80,
-        ws_xpixel: 0,
-        ws_ypixel: 0,
-    };
-
-    let docker_container_id = state
-        .docker_container_id
-        .lock()
-        .unwrap()
-        .get(&email)
-        .cloned();
-    if docker_container_id.is_none() {
-        eprintln!("No Docker container found for email: {}", email);
-        return Err(std::io::Error::new(
-            std::io::ErrorKind::NotFound,
-            "Docker container not found",
-        ));
-    }
-
-    let container_id = docker_container_id.clone().flatten().ok_or_else(|| {
-        std::io::Error::new(std::io::ErrorKind::InvalidInput, "Missing container ID")
-    })?;
-
-    let pty = openpty(Some(&winsize), None).map_err(|e| {
-        eprintln!("Failed to open PTY: {}", e);
-        std::io::Error::new(std::io::ErrorKind::Other, e)
-    })?;
-
-    let mut termios = termios::tcgetattr(pty.slave).map_err(|e| {
-        eprintln!("Failed to get termios: {}", e);
-        std::io::Error::new(std::io::ErrorKind::Other, e)
-    })?;
-
-    termios.input_flags.remove(
-        InputFlags::ICRNL
-            | InputFlags::IXON
-            | InputFlags::ISTRIP
-            | InputFlags::IGNCR
-            | InputFlags::INLCR,
-    );
-    termios.output_flags.remove(OutputFlags::OPOST);
-    termios
-        .local_flags
-        .remove(LocalFlags::ECHO | LocalFlags::ICANON | LocalFlags::ISIG | LocalFlags::IEXTEN);
-
-    termios.control_chars[SpecialCharacterIndices::VMIN as usize] = 1;
-    termios.control_chars[SpecialCharacterIndices::VTIME as usize] = 0;
-
-    termios::tcsetattr(pty.slave, SetArg::TCSANOW, &termios).map_err(|e| {
-        eprintln!("Failed to set termios: {}", e);
-        std::io::Error::new(std::io::ErrorKind::Other, e)
-    })?;
-
-    let shell_command = "/bin/bash";
-    let mut docker_command = Command::new("docker");
-    docker_command
+fn spawn_docker_shell(container_id: &str, slave_fd: i32) -> Result<std::process::Child, std::io::Error> {
+    Command::new("docker")
         .arg("exec")
         .arg("-it")
         .arg(container_id)
         .env("TERM", "xterm-256color")
         .env("COLORTERM", "truecolor")
         .env("LC_ALL", "C.UTF-8")
-        .arg(shell_command)
-        .stdin(unsafe { Stdio::from_raw_fd(libc::dup(pty.slave)) })
-        .stdout(unsafe { Stdio::from_raw_fd(libc::dup(pty.slave)) })
-        .stderr(unsafe { Stdio::from_raw_fd(libc::dup(pty.slave)) });
+        .arg("/bin/bash")
+        .stdin(unsafe { Stdio::from_raw_fd(libc::dup(slave_fd)) })
+        .stdout(unsafe { Stdio::from_raw_fd(libc::dup(slave_fd)) })
+        .stderr(unsafe { Stdio::from_raw_fd(libc::dup(slave_fd)) })
+        .spawn()
+}
 
-    match docker_command.spawn() {
-        Ok(_) => {
-            println!("Back terminal process started for {}", email);
-        }
+pub async fn pseudo_terminal(
+    s: &SocketRef,
+    docker_container_id: Option<String>,
+    state: AppState,
+    email: String,
+    terminal_id: String,
+) -> Result<(), std::io::Error> {
+    let winsize = Winsize { ws_row: 24, ws_col: 80, ws_xpixel: 0, ws_ypixel: 0 };
+
+    let pty = openpty(Some(&winsize), None)
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+
+    configure_pty(pty.slave)?;
+
+    let container_id = docker_container_id.unwrap_or_else(|| "default-container".to_string());
+    let key = terminal_key(&email, &terminal_id);
+
+    let master = unsafe { File::from_raw_fd(libc::dup(pty.master)) };
+    state.terminal_mapping.insert(key.clone(), master.try_clone()?);
+
+    let mut child = match spawn_docker_shell(&container_id, pty.slave) {
+        Ok(c) => c,
         Err(e) => {
-            eprintln!("Failed to spawn docker exec for back terminal: {}", e);
+            s.emit(events::outgoing::TERMINAL_ERROR, &TerminalStatusPayload {
+                terminal_id: terminal_id.clone(),
+                message: format!("Failed to start docker exec: {}", e),
+            })
+            .ok();
+            return Err(e);
+        }
+    };
+
+    s.emit(events::outgoing::TERMINAL_SUCCESS, &TerminalStatusPayload {
+        terminal_id: terminal_id.clone(),
+        message: "Terminal created successfully".to_string(),
+    })
+    .ok();
+
+    let socket_read = s.clone();
+    let tid_read = terminal_id.clone();
+    let email_read = email.clone();
+    let master_read = master.try_clone()?;
+
+    task::spawn(async move {
+        let mut buf = [0u8; 4096];
+        let mut reader = tokio::fs::File::from_std(master_read);
+        let ansi_re = Regex::new(r"\x1b\[[0-9;]*[mGKHFJl]|\x1b\][^\x07]*\x07").unwrap();
+        let prompt_re = Regex::new(r"@[^:]+:([^#\$%\r\n]+)[#\$%]").unwrap();
+
+        loop {
+            match reader.read(&mut buf).await {
+                Ok(0) => {
+                    socket_read
+                        .emit(events::outgoing::TERMINAL_CLOSED, &TerminalStatusPayload {
+                            terminal_id: tid_read.clone(),
+                            message: "Terminal session ended".to_string(),
+                        })
+                        .ok();
+                    break;
+                }
+                Ok(n) => {
+                    let text = match std::str::from_utf8(&buf[..n]) {
+                        Ok(t) => t.to_string(),
+                        Err(_) => {
+                            let mut end = n;
+                            while end > 0 {
+                                if std::str::from_utf8(&buf[..end]).is_ok() {
+                                    break;
+                                }
+                                end -= 1;
+                            }
+                            if end == 0 { continue; }
+                            std::str::from_utf8(&buf[..end]).unwrap().to_string()
+                        }
+                    };
+
+                    socket_read
+                        .emit(events::outgoing::TERMINAL_DATA, &TerminalDataPayload {
+                            terminal_id: tid_read.clone(),
+                            data: text.clone(),
+                        })
+                        .ok();
+
+                    let clean = ansi_re.replace_all(&text, "");
+                    if let Some(caps) = prompt_re.captures(&clean) {
+                        let cwd = caps[1].trim().to_string();
+                        if !cwd.is_empty() {
+                            socket_read.emit(events::outgoing::TERMINAL_CWD, &cwd).ok();
+                        }
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Terminal read error for {}:{}: {}", email_read, tid_read, e);
+                    socket_read
+                        .emit("terminal_error", &TerminalStatusPayload {
+                            terminal_id: tid_read.clone(),
+                            message: format!("Terminal read error: {}", e),
+                        })
+                        .ok();
+                    break;
+                }
+            }
+        }
+    });
+
+    let socket_exit = s.clone();
+    let tid_exit = terminal_id.clone();
+    let state_exit = state.clone();
+    let key_exit = key.clone();
+
+    task::spawn(async move {
+        let status = task::spawn_blocking(move || child.wait()).await;
+        match status {
+            Ok(Ok(s)) => println!("Docker process exited: {} for key={}", s, key_exit),
+            Ok(Err(e)) => eprintln!("Error waiting for docker process key={}: {}", key_exit, e),
+            Err(e) => eprintln!("spawn_blocking join error key={}: {}", key_exit, e),
+        }
+        state_exit.terminal_mapping.remove(&key_exit);
+        socket_exit
+            .emit(events::outgoing::TERMINAL_CLOSED, &TerminalStatusPayload {
+                terminal_id: tid_exit,
+                message: "Docker process terminated".to_string(),
+            })
+            .ok();
+    });
+
+    pseudo_back_terminal(state, email, terminal_id).await?;
+
+    Ok(())
+}
+
+pub async fn pseudo_back_terminal(
+    state: AppState,
+    email: String,
+    terminal_id: String,
+) -> Result<(), std::io::Error> {
+    let winsize = Winsize { ws_row: 24, ws_col: 80, ws_xpixel: 0, ws_ypixel: 0 };
+
+    let container_id = state
+        .docker_container_id
+        .get(&email)
+        .map(|r| r.clone())
+        .ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                format!("Docker container not found for email: {}", email),
+            )
+        })?;
+
+    let pty = openpty(Some(&winsize), None)
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+
+    configure_pty(pty.slave)?;
+
+    match spawn_docker_shell(&container_id, pty.slave) {
+        Ok(_) => println!("Back terminal started for {}:{}", email, terminal_id),
+        Err(e) => {
+            eprintln!("Failed to spawn back terminal for {}: {}", email, e);
             return Err(e);
         }
     }
 
     let master = unsafe { File::from_raw_fd(libc::dup(pty.master)) };
-
-    {
-        let mut back_terminal_guard = state.back_terminal_mapping.lock().unwrap();
-        back_terminal_guard.insert(email, Some(master));
-    }
+    state.back_terminal_mapping.insert(email, master);
 
     Ok(())
 }

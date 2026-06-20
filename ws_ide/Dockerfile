@@ -1,14 +1,13 @@
 FROM lukemathwalker/cargo-chef:latest-rust-1 AS chef
-
 WORKDIR /usr/src/app
 
 FROM chef AS planner
 COPY . .
 RUN cargo chef prepare --recipe-path recipe.json
 
-FROM chef AS builder 
+FROM chef AS builder
 COPY --from=planner /usr/src/app/recipe.json recipe.json
-
+RUN cargo chef cook --release --recipe-path recipe.json
 COPY . .
 RUN cargo build --release
 
@@ -28,6 +27,6 @@ RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/src/app
-EXPOSE 9000
+EXPOSE 8084
 COPY --from=builder /usr/src/app/target/release/ws_ide /usr/local/bin
 ENTRYPOINT ["/usr/local/bin/ws_ide"]
