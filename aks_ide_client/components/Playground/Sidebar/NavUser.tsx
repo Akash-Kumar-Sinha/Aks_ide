@@ -19,11 +19,13 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import useUserProfile from "@/utils/useUserProfile"
+import { useLogout } from "@/utils/useLogout"
 
 export function NavUser() {
   const router = useRouter()
   const { isMobile } = useSidebar()
   const { userProfile } = useUserProfile()
+  const handleLogout = useLogout()
 
   const initials = userProfile?.name
     ? userProfile.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
@@ -92,7 +94,7 @@ export function NavUser() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   variant="destructive"
-                  onClick={() => router.push("/auth?signout=true")}
+                  onClick={handleLogout}
                 >
                   <LogOut />
                   Sign out

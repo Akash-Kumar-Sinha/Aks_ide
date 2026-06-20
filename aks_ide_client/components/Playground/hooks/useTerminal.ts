@@ -160,6 +160,10 @@ export function useTerminal() {
 
   // Socket terminal events
   useEffect(() => {
+    const onInfo = ({ terminal_id, message }: TerminalStatusEvent) => {
+      setTabMsg(terminal_id, message);
+      writeToTab(terminal_id, "info", message);
+    };
     const onSuccess = ({ terminal_id, message }: TerminalStatusEvent) => {
       setTabActive((prev) => ({ ...prev, [terminal_id]: true }));
       setTabReady((prev) => ({ ...prev, [terminal_id]: true }));
@@ -192,6 +196,7 @@ export function useTerminal() {
       terminalInstances.current.forEach((inst) => inst.clear());
       setPendingMessages({});
     };
+    socket.on("terminal_info", onInfo);
     socket.on("terminal_success", onSuccess);
     socket.on("terminal_loading", onLoading);
     socket.on("terminal_data", onData);
@@ -199,6 +204,7 @@ export function useTerminal() {
     socket.on("terminal_closed", onClosed);
     socket.on("clear_terminal", onClear);
     return () => {
+      socket.off("terminal_info", onInfo);
       socket.off("terminal_success", onSuccess);
       socket.off("terminal_loading", onLoading);
       socket.off("terminal_data", onData);

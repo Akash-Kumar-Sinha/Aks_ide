@@ -10,7 +10,7 @@ export interface UseSocketConnectionReturn {
 }
 
 export function useSocketConnection(): UseSocketConnectionReturn {
-  const [connected, setConnected] = useState(socket.connected);
+  const [connected, setConnected] = useState(socket?.connected ?? false);
   const repoLoadedRef = useRef(false);
   const terminalReadyRef = useRef(false);
 

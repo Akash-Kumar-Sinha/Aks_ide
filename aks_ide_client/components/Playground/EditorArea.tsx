@@ -1,8 +1,10 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { SidebarInset } from "@/components/ui/sidebar";
-import CodeEditor from "./CodeEditor";
 import TerminalPanel from "./TerminalPanel";
+
+const CodeEditor = dynamic(() => import("./CodeEditor"), { ssr: false });
 import { StatusBar } from "./StatusBar";
 import type { OpenFile, SaveStatus } from "./types";
 

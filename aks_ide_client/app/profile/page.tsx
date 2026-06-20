@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import axios from "axios";
 import { motion } from "motion/react";
 import { ArrowLeft } from "lucide-react";
 import { TextureBg } from "@/components/ui/texture-bg";
@@ -9,8 +8,7 @@ import { SlideButton } from "@/components/ui/slide-button";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import useUserProfile from "@/utils/useUserProfile";
-import socket from "@/utils/Socket";
-import { AUTH_SERVICE_URL } from "@/utils/constant";
+import { useLogout } from "@/utils/useLogout";
 
 function ProfileField({
   label,
@@ -40,21 +38,7 @@ function ProfileField({
 export default function ProfilePage() {
   const router = useRouter();
   const { userProfile, loading } = useUserProfile();
-
-  const handleLogout = async () => {
-    try {
-      await axios.post(
-        `${AUTH_SERVICE_URL}/api/v1/auth/logout`,
-        {},
-        { withCredentials: true },
-      );
-    } catch (err) {
-      console.error("Logout error:", err);
-    } finally {
-      socket.disconnect();
-      router.push("/auth");
-    }
-  };
+  const handleLogout = useLogout();
 
   return (
     <TextureBg
