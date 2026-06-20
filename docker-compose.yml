@@ -1,42 +1,68 @@
 version: "3.8"
 
 services:
-  frontend:
+  postgres:
+    image: postgres:16-alpine
+    container_name: aks_ide_postgres
+    environment:
+      POSTGRES_USER: aks
+      POSTGRES_PASSWORD: aks7536
+      POSTGRES_DB: articles
+    volumes:
+      - aks_ide_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aks -d articles"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  auth_service:
     build:
-      context: ./aks_ide_web
-    container_name: aks_ide_web
+      context: ./auth_service
+    container_name: aks_ide_auth
     env_file:
-      - ./aks_ide_web/.env
+      - ./auth_service/.env
+    environment:
+      DATABASE_URL: "postgresql://aks:aks7536@postgres:5432/articles"
+      FRONTEND_DOMAIN: "http://localhost:3000"
     ports:
-      - "80:5173"
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
-    network_mode: host
-
-  backend:
-    build:
-      context: ./backend_ide
-    container_name: backend_ide
-    env_file:
-      - ./backend_ide/.env
-    ports:
-      - "8000:8000"
-    network_mode: host
-
-  ws_backend:
+  ws_ide:
     build:
       context: ./ws_ide
-    container_name: ws_backend
+    container_name: aks_ide_ws
     env_file:
       - ./ws_ide/.env
+    environment:
+      DATABASE_URL: "postgresql://aks:aks7536@postgres:5432/articles"
+      ALLOWED_ORIGIN: "http://localhost:3000"
     ports:
-      - "9000:9000"
-    network_mode: host
+      - "8084:8084"
+    depends_on:
+      postgres:
+        condition: service_healthy
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/lib/docker:/var/lib/docker
     privileged: true
-    environment:
-      - DOCKER_TLS_CERTDIR=""
+
+  frontend:
+    build:
+      context: ./aks_ide_client
+      args:
+        NEXT_PUBLIC_SERVER_URL: "http://localhost:8081"
+        NEXT_PUBLIC_AUTH_SERVICE_URL: "http://localhost:8081"
+        NEXT_PUBLIC_SOCKET_SERVER_URL: "http://localhost:8084"
+    container_name: aks_ide_frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - auth_service
+      - ws_ide
 
 volumes:
   aks_ide_pgdata:
