@@ -18,16 +18,23 @@ import (
 )
 
 func Callback(c *gin.Context) {
+	frontendURL := os.Getenv("FRONTEND_DOMAIN")
+
+	if errParam := c.Query("error"); errParam != "" {
+		c.Redirect(http.StatusTemporaryRedirect, frontendURL+"/auth")
+		return
+	}
+
 	storedState, err := c.Cookie("oauth_state")
 	if err != nil || storedState == "" || storedState != c.Query("state") {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_state"})
+		c.Redirect(http.StatusTemporaryRedirect, frontendURL+"/auth")
 		return
 	}
 	c.SetCookie("oauth_state", "", -1, "/", "", false, true)
 
 	code := c.Query("code")
 	if code == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Authorization code not provided"})
+		c.Redirect(http.StatusTemporaryRedirect, frontendURL+"/auth")
 		return
 	}
 
@@ -81,7 +88,6 @@ func Callback(c *gin.Context) {
 	c.SetCookie("access_token", accessToken, 900, "/", backendDomain, true, true)
 	c.SetCookie("refresh_token", refreshToken, 604800, "/", backendDomain, true, true)
 
-	frontendURL := os.Getenv("FRONTEND_DOMAIN")
 	c.Redirect(http.StatusTemporaryRedirect, frontendURL+"/workspace")
 }
 
