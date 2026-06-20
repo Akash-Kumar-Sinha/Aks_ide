@@ -1,4 +1,4 @@
-use bollard::container::{Config, CreateContainerOptions, StartContainerOptions};
+use bollard::container::{Config, CreateContainerOptions, InspectContainerOptions, StartContainerOptions};
 use bollard::image::CreateImageOptions;
 use bollard::models::HostConfig;
 use bollard::Docker;
@@ -11,6 +11,7 @@ use uuid::Uuid;
 use crate::entities::{users, workspace_containers};
 use crate::events;
 use crate::state::AppState;
+use crate::types::TerminalStatusPayload;
 
 const IMAGE: &str = "ubuntu:20.04";
 
@@ -19,6 +20,7 @@ pub async fn create_container(
     _id: Sid,
     state: AppState,
     email: String,
+    terminal_id: String,
 ) -> Option<String> {
     println!(
         "[container] Creating dev container for {} using image {}",
@@ -35,7 +37,7 @@ pub async fn create_container(
             eprintln!("[container] Step 1 FAIL: cannot reach Docker - {}", e);
             s.emit(
                 events::outgoing::TERMINAL_ERROR,
-                &format!("Failed to connect to Docker: {}", e),
+                &TerminalStatusPayload { terminal_id: terminal_id.clone(), message: format!("Failed to connect to Docker: {}", e) },
             )
             .ok();
             return None;
@@ -45,7 +47,7 @@ pub async fn create_container(
     println!("[container] Step 2: pulling image `{}`", IMAGE);
     s.emit(
         events::outgoing::TERMINAL_INFO,
-        "Pulling Ubuntu image, this may take a moment",
+        &TerminalStatusPayload { terminal_id: terminal_id.clone(), message: "Pulling Ubuntu image, this may take a moment".to_string() },
     )
     .ok();
 
@@ -66,13 +68,13 @@ pub async fn create_container(
             println!("[container] Step 2 OK: image `{}` ready", IMAGE);
             s.emit(
                 events::outgoing::TERMINAL_INFO,
-                "Image pulled successfully. Creating container",
+                &TerminalStatusPayload { terminal_id: terminal_id.clone(), message: "Image pulled successfully. Creating container".to_string() },
             )
             .ok();
         }
         Err(e) => {
             eprintln!("[container] Step 2 FAIL: could not pull image - {}", e);
-            s.emit(events::outgoing::TERMINAL_ERROR, &format!("Failed to pull image: {}", e))
+            s.emit(events::outgoing::TERMINAL_ERROR, &TerminalStatusPayload { terminal_id: terminal_id.clone(), message: format!("Failed to pull image: {}", e) })
                 .ok();
             return None;
         }
@@ -105,6 +107,34 @@ pub async fn create_container(
         ..Default::default()
     };
 
+    // Check if a container with this name already exists
+    if let Ok(info) = docker
+        .inspect_container(&container_name, None::<InspectContainerOptions>)
+        .await
+    {
+        let existing_id = info.id.clone().unwrap_or_default();
+        let running = info.state.as_ref().and_then(|s| s.running).unwrap_or(false);
+        println!(
+            "[container] Step 3: container already exists id={} running={}",
+            existing_id, running
+        );
+        if !running {
+            println!("[container] Step 3: starting stopped container id={}", existing_id);
+            if let Err(e) = docker
+                .start_container(&existing_id, None::<StartContainerOptions<String>>)
+                .await
+            {
+                eprintln!("[container] Step 3 FAIL: could not restart container - {}", e);
+                s.emit(events::outgoing::TERMINAL_ERROR, &TerminalStatusPayload { terminal_id: terminal_id.clone(), message: format!("Failed to restart container: {}", e) }).ok();
+                return None;
+            }
+            tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+        }
+        s.emit(events::outgoing::TERMINAL_INFO, &TerminalStatusPayload { terminal_id: terminal_id.clone(), message: "Reconnecting to existing workspace container".to_string() }).ok();
+        println!("[container] ── reusing existing container, returning id={}", existing_id);
+        return Some(existing_id);
+    }
+
     let create_result = docker
         .create_container(
             Some(CreateContainerOptions {
@@ -123,7 +153,7 @@ pub async fn create_container(
             );
             s.emit(
                 events::outgoing::TERMINAL_INFO,
-                "Container created successfully. Starting container",
+                &TerminalStatusPayload { terminal_id: terminal_id.clone(), message: "Container created successfully. Starting container".to_string() },
             )
             .ok();
             container
@@ -135,7 +165,7 @@ pub async fn create_container(
             );
             s.emit(
                 events::outgoing::TERMINAL_ERROR,
-                &format!("Failed to create container: {}", e),
+                &TerminalStatusPayload { terminal_id: terminal_id.clone(), message: format!("Failed to create container: {}", e) },
             )
             .ok();
             return None;
@@ -154,7 +184,7 @@ pub async fn create_container(
             );
             s.emit(
                 events::outgoing::TERMINAL_INFO,
-                "Container started successfully. Setting up workspace",
+                &TerminalStatusPayload { terminal_id: terminal_id.clone(), message: "Container started successfully. Setting up workspace".to_string() },
             )
             .ok();
             println!("[container] Step 4: waiting 500ms for container to stabilise");
@@ -165,7 +195,7 @@ pub async fn create_container(
             eprintln!("[container] Step 4 FAIL: could not start container - {}", e);
             s.emit(
                 events::outgoing::TERMINAL_ERROR,
-                &format!("Failed to start container: {}", e),
+                &TerminalStatusPayload { terminal_id: terminal_id.clone(), message: format!("Failed to start container: {}", e) },
             )
             .ok();
             return None;
@@ -206,7 +236,7 @@ pub async fn create_container(
                     );
                     s.emit(
                         events::outgoing::TERMINAL_INFO,
-                        "Workspace recorded. Container ready for terminal session.",
+                        &TerminalStatusPayload { terminal_id: terminal_id.clone(), message: "Workspace recorded. Container ready for terminal session.".to_string() },
                     )
                     .ok();
                 }
@@ -217,7 +247,7 @@ pub async fn create_container(
                     );
                     s.emit(
                         events::outgoing::TERMINAL_ERROR,
-                        &format!("Failed to record workspace: {}", e),
+                        &TerminalStatusPayload { terminal_id: terminal_id.clone(), message: format!("Failed to record workspace: {}", e) },
                     )
                     .ok();
                 }
@@ -227,14 +257,14 @@ pub async fn create_container(
             eprintln!("[container] Step 5 FAIL: no user found for email={}", email);
             s.emit(
                 events::outgoing::TERMINAL_ERROR,
-                &format!("No user found with email: {}", email),
+                &TerminalStatusPayload { terminal_id: terminal_id.clone(), message: format!("No user found with email: {}", email) },
             )
             .ok();
             return None;
         }
         Err(e) => {
             eprintln!("[container] Step 5 FAIL: DB error looking up user - {}", e);
-            s.emit(events::outgoing::TERMINAL_ERROR, &format!("Database error: {}", e))
+            s.emit(events::outgoing::TERMINAL_ERROR, &TerminalStatusPayload { terminal_id: terminal_id.clone(), message: format!("Database error: {}", e) })
                 .ok();
             return None;
         }

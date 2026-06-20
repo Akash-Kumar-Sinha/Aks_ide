@@ -89,15 +89,18 @@ pub async fn load_terminal(
                 .await
             {
                 Ok(_) => Some(row.container_id),
-                Err(_) => create_container(s, id, state.clone(), email.clone()).await,
+                Err(_) => create_container(s, id, state.clone(), email.clone(), terminal_id.clone()).await,
             }
         }
-        None => create_container(s, id, state.clone(), email.clone()).await,
+        None => create_container(s, id, state.clone(), email.clone(), terminal_id.clone()).await,
     };
 
     if let Some(ref cid) = docker_container_id {
-        s.emit(events::outgoing::TERMINAL_INFO, &format!("Container {} ready. Starting terminal session", cid))
-            .ok();
+        s.emit(events::outgoing::TERMINAL_INFO, &TerminalStatusPayload {
+            terminal_id: terminal_id.clone(),
+            message: format!("Container {} ready. Starting terminal session", cid),
+        })
+        .ok();
 
         state.docker_container_id.insert(email.clone(), cid.clone());
 
