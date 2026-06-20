@@ -10,6 +10,7 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import useUserProfile from "@/utils/useUserProfile";
 import socket from "@/utils/Socket";
+import { AUTH_SERVICE_URL } from "@/utils/constant";
 
 function ProfileField({
   label,
@@ -43,7 +44,7 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     try {
       await axios.post(
-        `${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/api/v1/auth/logout`,
+        `${AUTH_SERVICE_URL}/api/v1/auth/logout`,
         {},
         { withCredentials: true },
       );
@@ -97,9 +98,7 @@ export default function ProfilePage() {
                     Back
                   </motion.button>
 
-                  {/* Two-column body */}
                   <div className="flex flex-col sm:flex-row sm:gap-0">
-                    {/* ── Left: identity ── */}
                     <motion.div
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -150,10 +149,7 @@ export default function ProfilePage() {
                       </div>
                     </motion.div>
 
-                    {/* Divider */}
                     <div className="h-px sm:h-auto sm:w-px bg-white/[0.06] mb-6 sm:mb-0" />
-
-                    {/* ── Right: fields + action ── */}
                     <motion.div
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}

@@ -7,7 +7,7 @@ import { SlideButton } from "@/components/ui/slide-button";
 import { ScrambleText } from "@/components/ui/scramble-text";
 import { TextureBg } from "@/components/ui/texture-bg";
 
-const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
+import { AUTH_SERVICE_URL } from "@/utils/constant";
 
 function GoogleIcon() {
   return (
