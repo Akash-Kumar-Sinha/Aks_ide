@@ -1,182 +1,190 @@
-# 🧠 Aks IDE – Terminal Module
+# Aks IDE
 
-The **Terminal Module** is a core component of **Aks IDE** – a cloud-based, real-time development environment that gives developers access to a fully-functional Linux shell directly in their browser. This module serves as the foundation for code execution, file interaction, and developer tooling within the IDE.
+A cloud-based, browser-accessible development environment. Each user gets an isolated Docker container running a real Linux shell — install any tool, write code, and run it, all from the browser with **minimum setup required**.
 
----
+![IDE Screenshot](image.png)
 
-![Terminal Image](image.png)
+## Demo Videos
 
-- **Watch Aks IDE in Action – Rust Server Branch**  
-  [Click to watch the demo video](https://drive.google.com/file/d/1lsRfhyKzmDOu24aeY3xtF6QpcKJjdgNM/view?usp=sharing)
-
-- **Legacy Version**  
-  This is the previous working version of the terminal module from the `main` branch.  
-  [Click to watch the legacy demo](https://drive.google.com/file/d/11ykA2aA7gbdgfaeedPh0G2Spd1P8DdyW/view?usp=sharing)
+- [Rust server branch demo](https://drive.google.com/file/d/1lsRfhyKzmDOu24aeY3xtF6QpcKJjdgNM/view?usp=sharing)
+- [Legacy terminal module](https://drive.google.com/file/d/11ykA2aA7gbdgfaeedPh0G2Spd1P8DdyW/view?usp=sharing)
 
 ---
 
-## 📌 Current Capabilities
+## Architecture
 
-### ✅ Real-Time Shell Access
+Three independent services communicate over HTTP and WebSocket:
 
-- Each session launches an **isolated Docker container** (Ubuntu-based).
-- Executes a real Linux shell (typically `bash`) inside the container.
-- Users can run commands, install packages (e.g., `node`, `python`), and execute scripts just like on a local system.
+| Service          | Language / Framework        | Port | Responsibility                                       |
+| ---------------- | --------------------------- | ---- | ---------------------------------------------------- |
+| `auth_service`   | Go                          | 8081 | Google OAuth, JWT issuance & rotation, user profiles |
+| `ws_ide`         | Rust + socketioxide (Axum)  | 8084 | WebSocket hub — terminal, file I/O, Docker lifecycle |
+| `aks_ide_client` | Next.js 16 + React 19 + Bun | 3000 | Browser IDE — editor, terminal, explorer             |
 
----
+### ws_ide module layout
 
-## ⚙️ Architecture Overview
-
-| Component     | Technology                  |
-| ------------- | --------------------------- |
-| Backend       | Rust (Axum framework)       |
-| Frontend      | React + xterm.js            |
-| Communication | WebSockets (bi-directional) |
-| Terminal Core | PTY (Pseudo-Terminal)       |
-
----
-
-## 💡 Core Features
-
-| Feature                     | Description                                                                     |
-| --------------------------- | ------------------------------------------------------------------------------- |
-| 🐧 **Real Linux Shell**     | Full-featured bash shell inside an Ubuntu-based Docker container.               |
-| 🔄 **WebSocket I/O**        | Real-time terminal input/output via WebSocket.                                  |
-| 🖥️ **xterm.js UI**          | Responsive terminal interface rendered in-browser using xterm.js.               |
-| 🧱 **Single Terminal**      | One terminal session per user (multi-terminal support coming soon).             |
-| 🛠 **Dev Tool Installation** | Users can install languages/tools (Node.js, Python, etc.) inside the container. |
-
----
-
-## 🔮 Roadmap & Future Features
-
-### 🗂️ 1. Multi-Terminal Support
-
-- Multiple terminal instances via tabs or split panes.
-- Support for:
-  - Shared container across terminals.
-  - Dedicated services per terminal (e.g., build, logs, DB shell).
-
-### 📁 2. File System Access & Management
-
-- In-browser visual file explorer with full CRUD.
-- Features:
-  - Browse files/directories.
-  - Upload/download files.
-  - Sync changes with terminal and editor in real time.
-
-### 🧑‍💻 3. Embedded Code Editor
-
-- Integrate **Monaco Editor** or **CodeMirror** for in-browser coding.
-- Edit files that are instantly runnable in the terminal.
-- Compile and run code without leaving the IDE.
-
-### 🤖 4. AI Assistant (via MCP Server)
-
-- AI features include:
-  - Shell command auto-completion.
-  - Real-time debugging and error explanation.
-  - Optimizations and AI-suggested fixes.
-  - Debug mode: auto-search errors and provide resolutions.
-
-### 🐳 5. Run Docker & Databases Inside IDE
-
-- Launch Docker containers from terminal sessions.
-- Run databases like **PostgreSQL**, **MySQL**, **MongoDB** inside IDE.
-- Lightweight browser-based GUI for database management.
-- Simulate microservices and multi-container applications directly from the IDE.
+```text
+ws_ide/src/
+├── events/mod.rs                  # Typed socket event constants (incoming / outgoing)
+├── socket_handler/
+│   ├── mod.rs                     # Registers all socket event handlers
+│   ├── load_terminal.rs           # Spins up a Docker container + PTY on connect
+│   ├── pseudo_terminal.rs         # Streams PTY output back to the client
+│   ├── terminal_events/
+│   │   ├── terminal_input.rs      # Writes keystrokes to the PTY
+│   │   ├── terminal_resize.rs     # Sends TIOCSWINSZ on window resize
+│   │   └── close_terminal.rs      # Cleans up PTY and container state
+│   ├── file_events/
+│   │   ├── get_file_data.rs       # docker exec cat <path>
+│   │   └── save_file_data.rs      # docker exec tee + mv (atomic write)
+│   └── repo_events/
+│       └── repo_structure.rs      # Single-level docker exec ls -la per request
+├── docker_vm/create_container.rs  # Pulls image, runs container, persists container ID
+├── state.rs                       # Shared DashMap state (sockets, terminals, containers)
+└── types.rs                       # Payload structs for all socket events
+```
 
 ---
 
-## ⚙️ Why Rust for the Backend?
+## Features
 
-- **System-level control**: Ideal for managing PTYs, IO streams, and long-running processes.
-- **High performance**: Minimal memory usage and low latency.
-- **Memory safety**: Eliminates entire classes of bugs common in JS/TS.
-- **Binary data handling**: More robust than Node.js for binary streams and filesystem tasks.
+### Terminal
 
-> _The prototype built with Node.js faced challenges with binary data and stream stability. Rust resolves these with performance and safety guarantees._
+- Real Linux shell (bash) inside an isolated Ubuntu Docker container per user
+- PTY-backed I/O — resize, raw input, full colour output
+- Multiple terminal tabs with independent sessions
+- Pre-configured support for Node.js, Python, Rust, and more
+- xterm.js frontend for rendering
+
+### Code Editor
+
+- Monaco Editor (same engine as VS Code)
+- Multi-file tabs with unsaved-change indicators
+- Breadcrumb showing the current file path
+- Language auto-detected from file extension
+
+### File Explorer
+
+- **Lazy / on-demand loading** — only the current directory level is fetched; sub-directories load when expanded
+- `node_modules`, `.git`, and other heavy directories are fully accessible — loaded on demand like everything else
+- Fetched directories are cached permanently for the session (no re-fetch on collapse/expand)
+- Navigate into any folder as root, go back to parent with one click, or type any absolute path directly
+- Refresh re-fetches the root without clearing the cache
+
+### Auth
+
+- Google OAuth login via the Go auth service
+- RS256 JWT access tokens with rotating refresh tokens
+- Tokens stored in localStorage; auto-refreshed by the client
 
 ---
 
-## 🚧 Technical Challenges
+## Tech Stack
 
-### ❌ Ephemeral Docker Filesystem
-
-- Docker containers are **stateless** by default – all session data is lost on shutdown.
-- Limitations:
-  - Files are not retained across sessions.
-  - Makes project continuity and file storage unreliable.
-
-### ✅ Planned Solutions
-
-- Integration with:
-  - External volumes for persistent storage.
-  - Cloud storage (e.g., AWS S3) for file backups.
-  - Database or object storage for session snapshots and state.
+| Layer         | Technology                                       |
+| ------------- | ------------------------------------------------ |
+| Frontend      | Next.js 16, React 19, TypeScript, Tailwind CSS 4 |
+| UI components | shadcn/ui, Radix UI, Lucide icons                |
+| Code editor   | Monaco Editor (`@monaco-editor/react`)           |
+| Terminal UI   | xterm.js + xterm-addon-fit                       |
+| WebSocket     | socket.io-client ↔ socketioxide (Rust)           |
+| Backend       | Rust (Axum), socketioxide                        |
+| Auth service  | Go, PostgreSQL                                   |
+| Containers    | Docker (Ubuntu base image)                       |
+| Package mgr   | Bun (frontend), Cargo (Rust), Go modules         |
 
 ---
-
-## 📦 Tech Stack Summary
-
-| Layer         | Technology                           |
-| ------------- | ------------------------------------ |
-| Frontend      | React, xterm.js                      |
-| Backend       | Rust (Axum)                          |
-| Terminal Core | PTY (bash shell)                     |
-| Containers    | Docker (Ubuntu base image)           |
-| Communication | WebSocket                            |
-| Editor        | Monaco Editor / CodeMirror (planned) |
-| AI Assistant  | MCP Server, local LLMs (planned)     |
-| File Storage  | Cloud Storage, S3, External Volumes  |
 
 ## Running the Project
 
-- I can not dockerize the websocket server yet, as then it would be docker within docker. So, I am running the ws server on my local machine and connecting to it from the docker container.
+### Prerequisites
 
-- To run the project, follow these steps:
+- [Rust](https://www.rust-lang.org/) + Cargo
+- [Go](https://golang.org/) 1.22+
+- [Bun](https://bun.sh/) 1.x
+- [Docker](https://www.docker.com/) (running and accessible to the current user)
+- [PostgreSQL](https://www.postgresql.org/) at `localhost:5432`
 
-1. **Clone the repository**:
+### Clone
 
-  ```bash
-  git clone https://github.com/Akash-Kumar-Sinha/Aks_ide.git
-  ```
+```bash
+git clone https://github.com/Akash-Kumar-Sinha/Aks_ide.git
+cd Aks_ide
+```
 
-  ```bash 
-   cd Aks_ide
-  ```
+### Option A — One command (recommended)
 
-2. Run the **Frontend and Backend HTTP Server**:
+```bash
+chmod +x run.sh
+./run.sh
+```
 
-  ```bash
-  docker compose up
-  ```
+Runs migrations, then starts all three services. Press `Ctrl+C` to stop everything.
 
-3. **Run the WebSocket Server**
+### Option B — Each service manually
 
-  ```bash
-  cargo run
-  ```
+**1. Database migration** (run once, or after schema changes)
 
-4. Open your browser and navigate to `http://localhost:5173` to access the IDE.
+```bash
+cd auth_service
+go run ./cmd/migrations
+```
+
+Creates tables: `users`, `profiles`, `providers`, `refresh_tokens`, `workspace_containers`.
+
+**2. Auth service** (Go — port 8081)
+
+```bash
+cd auth_service
+go run ./cmd/server
+```
+
+**3. WebSocket IDE server** (Rust — port 8084)
+
+```bash
+cd ws_ide
+cargo run
+```
+
+**4. Frontend** (Next.js — port 3000)
+
+```bash
+cd aks_ide_client
+bun install
+bun run dev
+```
+
+Open `http://localhost:3000` in your browser.
+
+### Port reference
+
+| Service          | Port |
+| ---------------- | ---- |
+| `auth_service`   | 8081 |
+| `ws_ide`         | 8084 |
+| `aks_ide_client` | 3000 |
 
 ---
 
-## 🚀 Vision
+## Known Limitations
 
-The Terminal Module aims to evolve into a full-stack **cloud-native development OS**:
-
-- Seamless **code → compile → debug → deploy** lifecycle.
-- Fully integrated **AI pair programming** and real-time collaboration.
-- Developer environments without local setup – code instantly from anywhere.
-- Local-first desktop application that connects to cloud infrastructure.
-
-> _Just install our desktop app, log in, and start building – no setup required._
+**Ephemeral container filesystem** — Docker containers are stateless by default. Files written during a session are lost if the container is removed. Persistent volume mounting is on the roadmap.
 
 ---
 
-## 📬 Contact
+## Roadmap
 
-Have questions, suggestions, or want to collaborate?
+| Status     | Feature                    | Description                                                            |
+| ---------- | -------------------------- | ---------------------------------------------------------------------- |
+| Planned    | Persistent storage         | Docker volume integration so user files survive container restarts     |
+| Planned    | Cloud backup               | Optional S3 sync for automatic file backup across sessions             |
+| Planned    | AI assistant               | Shell autocomplete, error explanation, and AI-suggested fixes via MCP  |
+| Planned    | Multi-server orchestration | Horizontal scaling and distributed container scheduling                |
+| Planned    | Desktop app                | Offline-capable wrapper — log in and code from anywhere                |
+| Planned    | Real-time collaboration    | Shared sessions and live cursor presence for pair programming          |
 
-- ✉️ Email: [akashkumarsinha403@gmail.com]
+---
+
+## Contact
+
+Questions, feedback, or collaboration: [aks.krsinha@gmail.com](mailto:aks.krsinha@gmail.com)
