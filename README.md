@@ -1,13 +1,12 @@
 # Aks IDE
 
-A cloud-based, browser-accessible development environment. Each user gets an isolated Docker container running a real Linux shell — install any tool, write code, and run it, all from the browser with **minimum setup required**.
+A cloud-based, browser-accessible development environment. Each user gets an isolated Docker container running a real Linux shell - install any tool, write code, and run it, all from the browser with **minimum setup required**.
 
 ![IDE Screenshot](image.png)
 
 ## Demo Videos
 
-- [Rust server branch demo](https://drive.google.com/file/d/1lsRfhyKzmDOu24aeY3xtF6QpcKJjdgNM/view?usp=sharing)
-- [Legacy terminal module](https://drive.google.com/file/d/11ykA2aA7gbdgfaeedPh0G2Spd1P8DdyW/view?usp=sharing)
+- [IDE demo](https://drive.google.com/file/d/1DTTor_AOVAl_k-9qx5Ubk3dmEou8LEEW/view?usp=sharing)
 
 ---
 
@@ -18,8 +17,8 @@ Three independent services communicate over HTTP and WebSocket:
 | Service          | Language / Framework        | Port | Responsibility                                       |
 | ---------------- | --------------------------- | ---- | ---------------------------------------------------- |
 | `auth_service`   | Go                          | 8081 | Google OAuth, JWT issuance & rotation, user profiles |
-| `ws_ide`         | Rust + socketioxide (Axum)  | 8084 | WebSocket hub — terminal, file I/O, Docker lifecycle |
-| `aks_ide_client` | Next.js 16 + React 19 + Bun | 3000 | Browser IDE — editor, terminal, explorer             |
+| `ws_ide`         | Rust + socketioxide (Axum)  | 8084 | WebSocket hub - terminal, file I/O, Docker lifecycle |
+| `aks_ide_client` | Next.js 16 + React 19 + Bun | 3000 | Browser IDE - editor, terminal, explorer             |
 
 ### ws_ide module layout
 
@@ -51,7 +50,7 @@ ws_ide/src/
 ### Terminal
 
 - Real Linux shell (bash) inside an isolated Ubuntu Docker container per user
-- PTY-backed I/O — resize, raw input, full colour output
+- PTY-backed I/O - resize, raw input, full colour output
 - Multiple terminal tabs with independent sessions
 - Pre-configured support for Node.js, Python, Rust, and more
 - xterm.js frontend for rendering
@@ -65,8 +64,8 @@ ws_ide/src/
 
 ### File Explorer
 
-- **Lazy / on-demand loading** — only the current directory level is fetched; sub-directories load when expanded
-- `node_modules`, `.git`, and other heavy directories are fully accessible — loaded on demand like everything else
+- **Lazy / on-demand loading** - only the current directory level is fetched; sub-directories load when expanded
+- `node_modules`, `.git`, and other heavy directories are fully accessible - loaded on demand like everything else
 - Fetched directories are cached permanently for the session (no re-fetch on collapse/expand)
 - Navigate into any folder as root, go back to parent with one click, or type any absolute path directly
 - Refresh re-fetches the root without clearing the cache
@@ -112,7 +111,7 @@ git clone https://github.com/Akash-Kumar-Sinha/Aks_ide.git
 cd Aks_ide
 ```
 
-### Option A — One command (recommended)
+### Option A - One command (recommended)
 
 ```bash
 chmod +x run.sh
@@ -121,7 +120,46 @@ chmod +x run.sh
 
 Runs migrations, then starts all three services. Press `Ctrl+C` to stop everything.
 
-### Option B — Each service manually
+### Option B - Docker Compose
+
+Requires only Docker with the Compose plugin. All services (PostgreSQL, auth, WebSocket server, frontend) start together.
+
+#### 1. Create env files
+
+```bash
+cp auth_service/.env.example auth_service/.env
+cp ws_ide/.env.example ws_ide/.env
+```
+
+Open `auth_service/.env` and fill in your Google OAuth credentials (`GOOGLE_AUTH_CLIENT_ID`, `GOOGLE_AUTH_CLIENT_SECRET`). Everything else is pre-configured for local Docker use — `DATABASE_URL` is overridden by Compose automatically.
+
+#### 2. Build and start
+
+```bash
+docker compose up --build
+```
+
+This will:
+
+- Start a PostgreSQL 16 container with a persistent named volume (`aks_ide_pgdata`)
+- Run database migrations automatically inside the auth service container
+- Build and start `auth_service` (Go, port 8081), `ws_ide` (Rust, port 8084), and `frontend` (Next.js, port 3000)
+
+> **Note:** `ws_ide` runs in privileged mode and mounts `/var/run/docker.sock` so it can spin up per-user Docker containers on the host.
+
+Open `http://localhost:3000` in your browser.
+
+#### Stop everything
+
+```bash
+docker compose down
+```
+
+To also remove the database volume: `docker compose down -v`
+
+---
+
+### Option C - Each service manually
 
 **1. Database migration** (run once, or after schema changes)
 
@@ -132,21 +170,21 @@ go run ./cmd/migrations
 
 Creates tables: `users`, `profiles`, `providers`, `refresh_tokens`, `workspace_containers`.
 
-**2. Auth service** (Go — port 8081)
+**2. Auth service** (Go - port 8081)
 
 ```bash
 cd auth_service
 go run ./cmd/server
 ```
 
-**3. WebSocket IDE server** (Rust — port 8084)
+**3. WebSocket IDE server** (Rust - port 8084)
 
 ```bash
 cd ws_ide
 cargo run
 ```
 
-**4. Frontend** (Next.js — port 3000)
+**4. Frontend** (Next.js - port 3000)
 
 ```bash
 cd aks_ide_client
@@ -168,20 +206,13 @@ Open `http://localhost:3000` in your browser.
 
 ## Known Limitations
 
-**Ephemeral container filesystem** — Docker containers are stateless by default. Files written during a session are lost if the container is removed. Persistent volume mounting is on the roadmap.
+**Ephemeral container filesystem** - Docker containers are stateless by default. Files written during a session are lost if the container is removed.
 
 ---
 
-## Roadmap
+## Coming Soon
 
-| Status     | Feature                    | Description                                                            |
-| ---------- | -------------------------- | ---------------------------------------------------------------------- |
-| Planned    | Persistent storage         | Docker volume integration so user files survive container restarts     |
-| Planned    | Cloud backup               | Optional S3 sync for automatic file backup across sessions             |
-| Planned    | AI assistant               | Shell autocomplete, error explanation, and AI-suggested fixes via MCP  |
-| Planned    | Multi-server orchestration | Horizontal scaling and distributed container scheduling                |
-| Planned    | Desktop app                | Offline-capable wrapper — log in and code from anywhere                |
-| Planned    | Real-time collaboration    | Shared sessions and live cursor presence for pair programming          |
+An AI agent is being added to the application - shell autocomplete, error explanation, and AI-suggested fixes directly inside the IDE.
 
 ---
 
