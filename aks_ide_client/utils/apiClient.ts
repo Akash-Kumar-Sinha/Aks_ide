@@ -37,12 +37,8 @@ apiClient.interceptors.response.use(
         await refreshInFlight;
         return apiClient(original);
       } catch {
-        if (
-          typeof window !== "undefined" &&
-          !window.location.pathname.startsWith("/auth")
-        ) {
-          window.location.href = "/auth";
-        }
+        // Let page-level AuthProtect handle the redirect — redirecting here
+        // fires even on public pages like the landing page.
       }
     }
 
