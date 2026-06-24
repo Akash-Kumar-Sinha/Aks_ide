@@ -7,6 +7,7 @@ pub mod incoming {
     pub const GET_FILES_DATA: &str = "get_files_data";
     pub const SAVE_DATA: &str = "save_data";
     pub const CLOSE_TERMINAL: &str = "close_terminal";
+    pub const CODE_COMPLETION: &str = "code_completion";
 }
 
 pub mod outgoing {
@@ -22,4 +23,6 @@ pub mod outgoing {
     pub const FILES_DATA: &str = "files_data";
     pub const FILE_SAVED: &str = "file_saved";
     pub const REPO_STRUCTURE: &str = "repo_structure";
+    pub const COMPLETION_RESULT: &str = "completion_result";
+    pub const COMPLETION_ERROR: &str = "completion_error";
 }

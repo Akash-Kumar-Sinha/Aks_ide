@@ -29,6 +29,9 @@ regex = "1.11.1"
 serde_json = "1.0.104"
 uuid = { version = "1", features = ["v4"] }
 dashmap = "6.1"
+rig-core = "0.39.0"
+rig-gemini-grpc = "0.39.0"
+rig = "0.39.0"
 
 # pty = "0.2.0" 
 # futures = "0.3"

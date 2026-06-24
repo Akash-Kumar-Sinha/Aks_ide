@@ -1,7 +1,7 @@
 const useInstallationGuide = () => {
   const installationCommands = [
     {
-      title: "Basic Commands to Run Inside Aks IDE",
+      title: "Basic Commands to Run Inside IDE",
       description:
         "These commands install essential utilities and prepare the environment for further setup.",
       commands: [

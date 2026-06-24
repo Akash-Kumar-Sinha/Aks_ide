@@ -81,7 +81,7 @@ export default function AuthPage() {
 
                 <div className="space-y-1.5">
                   <ScrambleText
-                    text="AKS IDE"
+                    text="IDE"
                     className="text-xl font-bold text-white tracking-[0.2em]"
                   />
                   <p className="text-xs text-white/35 tracking-[0.15em] uppercase">

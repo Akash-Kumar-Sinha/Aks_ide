@@ -3,13 +3,14 @@
 import React, { useRef } from "react";
 import Editor from "@monaco-editor/react";
 import * as monaco from "monaco-editor";
-import { Skeleton } from "@/components/ui/skeleton";
 import useUserProfile from "@/utils/useUserProfile";
 import { useEditorFiles } from "./hooks/useEditorFiles";
 import { EditorTabBar } from "./EditorTabBar";
 import { EditorBreadcrumb } from "./EditorBreadcrumb";
 import { getLanguage } from "./types";
 import type { OpenFile } from "./types";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useInlineCompletion } from "./hooks/useInlineCompletion";
 
 interface CodeEditorProps {
   openFiles: OpenFile[];
@@ -54,6 +55,12 @@ const CodeEditor: React.FC<CodeEditorProps> = React.memo(
 
     const language = activeFile ? getLanguage(activeFile.name) : "plaintext";
 
+    useInlineCompletion({
+      email: userProfile?.email,
+      language,
+      filename: activeFile?.name ?? "",
+    });
+
     return (
       <div className="flex flex-col h-full" style={{ background: "var(--ide-surface)" }}>
         <EditorTabBar
@@ -78,10 +85,10 @@ const CodeEditor: React.FC<CodeEditorProps> = React.memo(
               onChange={onEditorChange}
               theme="vs-dark"
               loading={
-                <div className="flex flex-col gap-3 p-4">
-                  <Skeleton className="h-4 w-3/4" style={{ background: "var(--ide-elevated)" }} />
-                  <Skeleton className="h-4 w-1/2" style={{ background: "var(--ide-elevated)" }} />
-                  <Skeleton className="h-4 w-2/3" style={{ background: "var(--ide-elevated)" }} />
+                <div className="flex flex-col gap-3 p-4 h-full bg-[#1e1e1e]">
+                  <Skeleton className="h-4 w-3/4 bg-[#2d2d2d]" />
+                  <Skeleton className="h-4 w-1/2 bg-[#2d2d2d]" />
+                  <Skeleton className="h-4 w-2/3 bg-[#2d2d2d]" />
                 </div>
               }
               options={{
@@ -94,6 +101,7 @@ const CodeEditor: React.FC<CodeEditorProps> = React.memo(
                 padding: { top: 8 },
                 renderLineHighlight: "gutter",
                 smoothScrolling: true,
+                inlineSuggest: { enabled: true },
               }}
             />
           ) : (
@@ -105,7 +113,7 @@ const CodeEditor: React.FC<CodeEditorProps> = React.memo(
               }}
             >
               <span className="text-3xl font-semibold tracking-widest uppercase bg-linear-to-r from-blue-500/50 to-zinc-600 bg-clip-text text-transparent select-none">
-                AKS IDE
+                IDE
               </span>
               <p className="text-xs text-zinc-700 select-none">
                 Open a file from the explorer to start editing

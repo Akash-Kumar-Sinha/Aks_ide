@@ -4,7 +4,7 @@ import { Providers } from "@/components/providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Aks IDE",
+  title: "IDE",
   description: "Cloud-based development environment",
 };
 

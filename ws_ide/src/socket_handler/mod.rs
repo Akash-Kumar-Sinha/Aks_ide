@@ -1,3 +1,4 @@
+pub mod completion_events;
 pub mod file_events;
 pub mod load_terminal;
 pub mod pseudo_terminal;
@@ -13,12 +14,13 @@ use crate::{
     events,
     state::AppState,
     types::{
-        CloseTerminalPayload, FileContentPayload, LoadTerminalPayload,
+        CloseTerminalPayload, CompletionPayload, FileContentPayload, LoadTerminalPayload,
         RepoTreePayload, SaveFileContentPayload, TerminalInputPayload, TerminalResizePayload,
     },
 };
 
 use self::{
+    completion_events::handle_code_completion,
     file_events::{get_file_data, save_file_data},
     load_terminal::load_terminal,
     repo_events::get_repo_structure,
@@ -125,6 +127,14 @@ pub fn register_handlers(io: &SocketIo, state: AppState) {
                     if let Err(e) = handle_close_terminal(&s, st, p).await {
                         eprintln!("close_terminal: {}", e);
                     }
+                })
+            }
+        });
+
+        s.on(events::incoming::CODE_COMPLETION, {
+            move |s: SocketRef, Data::<CompletionPayload>(p): Data<CompletionPayload>| {
+                Box::pin(async move {
+                    handle_code_completion(s, p).await;
                 })
             }
         });

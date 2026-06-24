@@ -21,7 +21,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-2">
             <Logo className="w-5 h-5 text-white" />
             <ScrambleText
-              text="AKS IDE"
+              text="IDE"
               className="text-sm font-semibold text-white tracking-widest"
             />
           </div>
@@ -58,7 +58,7 @@ export default function LandingPage() {
             shadowColor="#3b82f6"
             className="text-6xl sm:text-8xl font-bold text-white tracking-tight"
           >
-            AKS IDE
+            IDE
           </LineShadowText>
           <KineticText
             text="Code anywhere. Ship everywhere."
@@ -128,7 +128,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-2">
             <Logo className="w-4 h-4 sm:w-4 sm:h-4 text-white/40" />
             <ScrambleText
-              text="AKS IDE"
+              text="IDE"
               className="text-xs text-white/40 tracking-widest"
             />
           </div>

@@ -65,3 +65,19 @@ pub struct SaveFileContentPayload {
     pub path: String,
     pub content: String,
 }
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct CompletionPayload {
+    pub email: String,
+    pub request_id: String,
+    pub prefix: String,
+    pub suffix: String,
+    pub language: String,
+    pub filename: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CompletionResult {
+    pub request_id: String,
+    pub text: String,
+}
