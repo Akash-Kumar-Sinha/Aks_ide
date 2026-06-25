@@ -24,7 +24,7 @@ export function StatusBar({
 }: StatusBarProps) {
   return (
     <div
-      className="shrink-0 h-5 flex items-center justify-between px-3"
+      className="shrink-0 h-6 flex items-center justify-between px-3"
       style={{
         background: "var(--ide-panel)",
         borderTop: "1px solid var(--ide-border)",
@@ -42,7 +42,7 @@ export function StatusBar({
         {selectedFile && (
           <>
             <span className="text-zinc-700 text-[10px]">·</span>
-            <span className="text-[10px] font-mono text-zinc-600 max-w-[200px] truncate">
+            <span className="text-[10px] font-mono text-zinc-600 max-w-50 truncate">
               {selectedFile}
             </span>
           </>
@@ -68,7 +68,7 @@ export function StatusBar({
                 }`}
               >
                 <TerminalIcon className="w-3 h-3" />
-                <span>Terminas</span>
+                <span>Terminal</span>
               </button>
             </TooltipTrigger>
             <TooltipContent side="top">Toggle terminal (Ctrl+`)</TooltipContent>

@@ -97,21 +97,84 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
     const canGoUp = rootPath !== "/";
     const hasRoot = treeMap.has(rootPath);
 
+    const isRefreshing = fetchingPaths.has(rootPath) || explorerLoadingStatus;
+
+    const handleRefresh = () => {
+      fetchPath(rootPath);
+    };
+
     return (
       <div
         className="flex flex-col h-full"
         style={{ background: "var(--ide-surface)" }}
       >
-        {/* Header */}
         <div
-          className="flex items-center justify-between gap-2 px-3 h-9 shrink-0 border-b"
+          className="shrink-0 border-b"
           style={{
             background: "var(--ide-panel)",
             borderColor: "var(--ide-border)",
           }}
         >
+          <div className="flex items-center justify-between px-3 h-8">
+            <span className="text-[10px] font-medium tracking-widest text-zinc-600 uppercase">
+              Explorer
+            </span>
+            <div className="flex items-center gap-0.5">
+              {canGoUp && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="size-6 text-zinc-600 hover:text-zinc-300"
+                      onClick={handleGoUp}
+                    >
+                      <FolderUp className="size-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">Go to parent</TooltipContent>
+                </Tooltip>
+              )}
+
+              {selectedFolderPath && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="size-6 text-blue-400 hover:text-blue-300"
+                      onClick={handleOpenSelected}
+                    >
+                      <FolderOpen className="size-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    Open &quot;{selectedFolderPath.split("/").pop()}&quot; as root
+                  </TooltipContent>
+                </Tooltip>
+              )}
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="size-6 text-zinc-600 hover:text-zinc-300"
+                    disabled={isRefreshing}
+                    onClick={handleRefresh}
+                  >
+                    <RefreshCw
+                      className={`size-3.5 ${isRefreshing ? "animate-spin" : ""}`}
+                    />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Refresh</TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+
           {pathEditMode ? (
-            <div className="flex items-center gap-1.5 flex-1">
+            <div className="flex items-center gap-1.5 px-3 pb-2">
               <Input
                 autoFocus
                 value={pathDraft}
@@ -135,91 +198,21 @@ const Explorer: React.FC<ExplorerProps> = React.memo(
                 <ChevronRight className="size-3" />
               </Button>
             </div>
-          ) : (
-            <>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    className="flex items-center gap-1 min-w-0 flex-1 text-left group"
-                    onClick={() => {
-                      setPathDraft(rootPath);
-                      setPathEditMode(true);
-                    }}
-                  >
-                    <span className="text-[10px] font-semibold tracking-widest text-zinc-500 uppercase shrink-0">
-                      Explorer
-                    </span>
-                    <span className="text-zinc-700 text-[10px] mx-0.5">/</span>
-                    <span className="text-[10px] text-zinc-600 group-hover:text-zinc-400 transition-colors truncate font-mono">
-                      {displayName}
-                    </span>
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  {rootPath} - click to type a path
-                </TooltipContent>
-              </Tooltip>
-
-              <div className="flex items-center gap-0.5 shrink-0">
-                {canGoUp && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="size-6 text-zinc-600 hover:text-zinc-300"
-                        onClick={handleGoUp}
-                      >
-                        <FolderUp className="size-3.5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">Go to parent</TooltipContent>
-                  </Tooltip>
-                )}
-
-                {selectedFolderPath && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="size-6 text-blue-400 hover:text-blue-300"
-                        onClick={handleOpenSelected}
-                      >
-                        <FolderOpen className="size-3.5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                      Open &quot;{selectedFolderPath.split("/").pop()}&quot; as
-                      root
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-
-                {onRefresh && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="size-6 text-zinc-600 hover:text-zinc-300"
-                        disabled={explorerLoadingStatus}
-                        onClick={onRefresh}
-                      >
-                        <RefreshCw
-                          className={`size-3.5 ${explorerLoadingStatus ? "animate-spin" : ""}`}
-                        />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">Refresh</TooltipContent>
-                  </Tooltip>
-                )}
-              </div>
-            </>
-          )}
+          ) : displayName !== "/" ? (
+            <button
+              className="flex items-center gap-1 w-full px-3 pb-2 text-left group min-w-0"
+              onClick={() => {
+                setPathDraft(rootPath);
+                setPathEditMode(true);
+              }}
+            >
+              <span className="text-[10px] font-mono text-zinc-600 group-hover:text-zinc-400 transition-colors truncate">
+                {rootPath}
+              </span>
+            </button>
+          ) : null}
         </div>
 
-        {/* Tree */}
         <ScrollArea className="flex-1">
           {explorerLoadingStatus && !hasRoot ? (
             <div className="flex flex-col gap-2 p-3">

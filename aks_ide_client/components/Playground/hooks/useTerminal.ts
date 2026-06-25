@@ -124,13 +124,11 @@ export function useTerminal() {
     }
   }, [user, loading, initXterm]);
 
-  // Init xterm once user profile loads for already-mounted divs
   useEffect(() => {
     if (!user || loading) return;
     terminalDivRefs.current.forEach((el, tabId) => initXterm(tabId, el));
   }, [user, loading, initXterm]);
 
-  // Socket connection
   useEffect(() => {
     const handleConnect = () => {
       setConnected(true);
@@ -158,7 +156,6 @@ export function useTerminal() {
     };
   }, [user, terminalTabs, terminalLoaded]);
 
-  // Socket terminal events
   useEffect(() => {
     const onInfo = ({ terminal_id, message }: TerminalStatusEvent) => {
       setTabMsg(terminal_id, message);
@@ -214,7 +211,6 @@ export function useTerminal() {
     };
   }, [writeToTab, user]);
 
-  // Flush pending messages once a tab becomes ready
   useEffect(() => {
     Object.entries(tabReady).forEach(([tabId, ready]) => {
       if (!ready || !tabActive[tabId]) return;
@@ -235,7 +231,6 @@ export function useTerminal() {
     });
   }, [tabReady, tabActive, pendingMessages]);
 
-  // Window resize → refit all terminals
   useEffect(() => {
     const onResize = () => {
       fitAddons.current.forEach((fit, tabId) => {
@@ -252,7 +247,6 @@ export function useTerminal() {
     return () => window.removeEventListener("resize", onResize);
   }, [user]);
 
-  // Focus + fit when switching active tab
   useLayoutEffect(() => {
     const fit = fitAddons.current.get(activeTerminalId);
     const inst = terminalInstances.current.get(activeTerminalId);

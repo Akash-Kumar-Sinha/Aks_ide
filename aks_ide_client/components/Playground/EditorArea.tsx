@@ -36,7 +36,7 @@ export function EditorArea({
   language,
 }: EditorAreaProps) {
   return (
-    <SidebarInset className="flex flex-col min-h-0 overflow-hidden flex-1" style={{ background: "var(--ide-bg)" }}>
+    <SidebarInset className="gsap-ws-editor flex flex-col min-h-0 overflow-hidden flex-1" style={{ background: "var(--ide-bg)" }}>
       <div className="flex-1 min-h-0">
         <CodeEditor
           openFiles={openFiles}

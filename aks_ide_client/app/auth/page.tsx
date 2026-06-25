@@ -1,6 +1,7 @@
 "use client";
 
-import { motion } from "motion/react";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 import { Logo } from "@/components/Logo/Logo";
 import { RadialSeparator } from "@/components/ui/radial-separator";
 import { SlideButton } from "@/components/ui/slide-button";
@@ -8,6 +9,8 @@ import { ScrambleText } from "@/components/ui/scramble-text";
 import { TextureBg } from "@/components/ui/texture-bg";
 
 import { AUTH_SERVICE_URL } from "@/utils/constant";
+
+gsap.registerPlugin(useGSAP);
 
 function GoogleIcon() {
   return (
@@ -39,6 +42,17 @@ function GoogleIcon() {
 }
 
 export default function AuthPage() {
+  useGSAP(() => {
+    gsap
+      .timeline({ defaults: { ease: "power2.out" } })
+      .from(".gsap-auth-card",    { opacity: 0, y: 40, scale: 0.96, duration: 0.7 })
+      .from(".gsap-auth-logo",    { opacity: 0, scale: 0.75, duration: 0.5 }, "-=0.35")
+      .from(".gsap-auth-title",   { opacity: 0, y: 10, duration: 0.4 },       "-=0.25")
+      .from(".gsap-auth-divider", { opacity: 0, scaleX: 0, duration: 0.4, transformOrigin: "center" }, "-=0.2")
+      .from(".gsap-auth-btn",     { opacity: 0, y: 10, duration: 0.4 },       "-=0.2")
+      .from(".gsap-auth-footer",  { opacity: 0, duration: 0.4 },               "-=0.1");
+  });
+
   return (
     <TextureBg
       className="min-h-screen w-full bg-[radial-gradient(ellipse_at_top,#0d1117_0%,#060810_55%,#000000_100%)]"
@@ -50,12 +64,7 @@ export default function AuthPage() {
       </div>
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full max-w-90"
-        >
+        <div className="gsap-auth-card w-full max-w-90">
           <div
             className="w-full rounded-2xl overflow-hidden"
             style={{
@@ -68,18 +77,13 @@ export default function AuthPage() {
             <div className="h-px w-full bg-linear-to-r from-transparent via-blue-500/50 to-transparent" />
 
             <div className="p-8 space-y-7">
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15, duration: 0.45 }}
-                className="flex flex-col items-center gap-5 text-center"
-              >
+              <div className="gsap-auth-logo flex flex-col items-center gap-5 text-center">
                 <div className="relative flex items-center justify-center">
                   <div className="absolute w-14 h-14 bg-blue-500/15 blur-xl rounded-full" />
                   <Logo className="relative w-9 h-9 text-primary" />
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="gsap-auth-title space-y-1.5">
                   <ScrambleText
                     text="IDE"
                     className="text-xl font-bold text-white tracking-[0.2em]"
@@ -88,16 +92,13 @@ export default function AuthPage() {
                     Cloud Workspace
                   </p>
                 </div>
-              </motion.div>
+              </div>
 
-              <RadialSeparator className="opacity-50" />
+              <div className="gsap-auth-divider">
+                <RadialSeparator className="opacity-50" />
+              </div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 0.45 }}
-                className="space-y-4"
-              >
+              <div className="gsap-auth-btn space-y-4">
                 <p className="text-[10px] text-white/30 text-center tracking-[0.18em] uppercase">
                   Sign in to continue
                 </p>
@@ -116,21 +117,16 @@ export default function AuthPage() {
                     </span>
                   </SlideButton>
                 </a>
-              </motion.div>
+              </div>
 
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5, duration: 0.4 }}
-                className="text-[10px] text-white/18 text-center tracking-wider"
-              >
+              <p className="gsap-auth-footer text-[10px] text-white/18 text-center tracking-wider">
                 No password required
-              </motion.p>
+              </p>
             </div>
 
             <div className="h-px w-full bg-linear-to-r from-transparent via-white/4 to-transparent" />
           </div>
-        </motion.div>
+        </div>
       </div>
     </TextureBg>
   );

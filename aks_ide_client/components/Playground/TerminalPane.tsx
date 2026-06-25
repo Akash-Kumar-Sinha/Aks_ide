@@ -44,9 +44,6 @@ export function TerminalPane({
             <TerminalIcon className="w-4 h-4 text-zinc-500" />
           </div>
           <Loading variant="default" scale="lg" pattern="pulse" loadingMessage={loadingMsg} />
-          <div className="text-[10px] text-zinc-700 text-center">
-            {connected ? "✓" : "✗"} Socket · {tabActive[tabId] ? "✓" : "✗"} Active · {tabReady[tabId] ? "✓" : "✗"} Ready
-          </div>
           {pendingMessages.length > 0 && (
             <div className="max-h-24 overflow-y-auto custom-scroll w-full max-w-sm space-y-1">
               {pendingMessages.slice(-3).map((msg, i) => (

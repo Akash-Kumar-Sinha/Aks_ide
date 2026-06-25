@@ -11,11 +11,6 @@ import {
 } from "react-icons/fa";
 import type { TreeNode } from "@/components/Playground/hooks/useFileNavigation";
 import { cn } from "@/lib/utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 interface FileTreeProps {
   treeMap: Map<string, TreeNode[]>;
@@ -185,49 +180,42 @@ const FileTree: React.FC<FileTreeProps> = ({
 
         return (
           <div key={`dir-${dir.path}`} className="select-none">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div
+            <div
+              className={cn(
+                "flex items-center gap-1.5 cursor-pointer px-1.5 py-0.5 rounded-sm transition-colors border-l-2",
+                isFolderSelected
+                  ? "text-zinc-100 border-blue-500"
+                  : "text-zinc-400 border-transparent hover:bg-white/5 hover:text-zinc-200",
+              )}
+              style={
+                isFolderSelected
+                  ? { background: "var(--ide-accent)" }
+                  : undefined
+              }
+              onClick={() => {
+                toggleFolder(dir.path);
+                onFolderSelect?.(dir.name, dir.path);
+              }}
+            >
+              {isLoading ? (
+                <FaSpinner className="shrink-0 w-3 h-3 text-blue-400/60 animate-spin" />
+              ) : isExpanded ? (
+                <FaFolderOpen
                   className={cn(
-                    "flex items-center gap-1.5 cursor-pointer px-1.5 py-0.5 rounded-sm transition-colors border-l-2",
-                    isFolderSelected
-                      ? "text-zinc-100 border-blue-500"
-                      : "text-zinc-400 border-transparent hover:bg-white/5 hover:text-zinc-200",
+                    "shrink-0 w-3 h-3",
+                    isFolderSelected ? "text-blue-400" : "text-blue-400/60",
                   )}
-                  style={
-                    isFolderSelected
-                      ? { background: "var(--ide-accent)" }
-                      : undefined
-                  }
-                  onClick={() => {
-                    toggleFolder(dir.path);
-                    onFolderSelect?.(dir.name, dir.path);
-                  }}
-                >
-                  {isLoading ? (
-                    <FaSpinner className="shrink-0 w-3 h-3 text-blue-400/60 animate-spin" />
-                  ) : isExpanded ? (
-                    <FaFolderOpen
-                      className={cn(
-                        "shrink-0 w-3 h-3",
-                        isFolderSelected ? "text-blue-400" : "text-blue-400/60",
-                      )}
-                    />
-                  ) : (
-                    <FaFolder
-                      className={cn(
-                        "shrink-0 w-3 h-3",
-                        isFolderSelected ? "text-blue-400" : "text-blue-400/60",
-                      )}
-                    />
+                />
+              ) : (
+                <FaFolder
+                  className={cn(
+                    "shrink-0 w-3 h-3",
+                    isFolderSelected ? "text-blue-400" : "text-blue-400/60",
                   )}
-                  <span className="truncate flex-1 font-medium">{dir.name}</span>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" sideOffset={4} className="font-mono text-[11px]">
-                {dir.path}
-              </TooltipContent>
-            </Tooltip>
+                />
+              )}
+              <span className="truncate flex-1 font-medium">{dir.name}</span>
+            </div>
 
             {isExpanded && (
               <div className="ml-3 pl-2 border-l border-white/5">
@@ -260,33 +248,27 @@ const FileTree: React.FC<FileTreeProps> = ({
         const fileColor = getFileColor(file.name);
 
         return (
-          <Tooltip key={`file-${file.path}`}>
-            <TooltipTrigger asChild>
-              <div
-                className={cn(
-                  "flex items-center gap-1.5 px-1.5 py-0.5 rounded-sm transition-colors border-l-2 cursor-pointer",
-                  isActive
-                    ? "text-zinc-100 border-blue-500"
-                    : "text-zinc-500 hover:text-zinc-200 hover:bg-white/5 border-transparent",
-                )}
-                style={isActive ? { background: "var(--ide-accent)" } : undefined}
-                onClick={() => onSelect?.(file.name, file.path)}
-              >
-                <FileIcon
-                  className={cn(
-                    "shrink-0 w-3 h-3",
-                    isActive ? "text-blue-400" : fileColor,
-                  )}
-                />
-                <span className={cn("truncate", isActive ? "font-medium" : "font-normal")}>
-                  {file.name}
-                </span>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" sideOffset={4} className="font-mono text-[11px]">
-              {file.path}
-            </TooltipContent>
-          </Tooltip>
+          <div
+            key={`file-${file.path}`}
+            className={cn(
+              "flex items-center gap-1.5 px-1.5 py-0.5 rounded-sm transition-colors border-l-2 cursor-pointer",
+              isActive
+                ? "text-zinc-100 border-blue-500"
+                : "text-zinc-500 hover:text-zinc-200 hover:bg-white/5 border-transparent",
+            )}
+            style={isActive ? { background: "var(--ide-accent)" } : undefined}
+            onClick={() => onSelect?.(file.name, file.path)}
+          >
+            <FileIcon
+              className={cn(
+                "shrink-0 w-3 h-3",
+                isActive ? "text-blue-400" : fileColor,
+              )}
+            />
+            <span className={cn("truncate", isActive ? "font-medium" : "font-normal")}>
+              {file.name}
+            </span>
+          </div>
         );
       })}
 

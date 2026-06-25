@@ -56,7 +56,10 @@ export function useInlineCompletion({ email, language, filename }: Options) {
             const TIMEOUT_MS = 5000;
 
             const timer = setTimeout(() => {
-              console.warn("[completion] TIMEOUT — no response within 5s for", requestId);
+              console.warn(
+                "[completion] TIMEOUT - no response within 5s for",
+                requestId,
+              );
               socket.off("completion_result", onResult);
               resolve("");
             }, TIMEOUT_MS);
@@ -98,7 +101,7 @@ export function useInlineCompletion({ email, language, filename }: Options) {
           };
         },
         freeInlineCompletions: () => {},
-      }
+      },
     );
 
     return () => {

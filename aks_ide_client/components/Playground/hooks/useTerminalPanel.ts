@@ -26,9 +26,6 @@ export function useTerminalPanel(): UseTerminalPanelReturn {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!e.ctrlKey || e.code !== "Backquote") return;
-      // Skip when Monaco has focus - the Monaco keybinding registered in
-      // CodeEditor handles it there. Without this guard, both handlers fire
-      // and the toggles cancel each other out.
       if ((e.target as Element)?.closest?.(".monaco-editor")) return;
       e.preventDefault();
       e.stopPropagation();

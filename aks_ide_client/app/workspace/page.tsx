@@ -1,7 +1,11 @@
 "use client";
 
 import type { CSSProperties } from "react";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 import { SidebarProvider } from "@/components/ui/sidebar";
+
+gsap.registerPlugin(useGSAP);
 import AppSidebar from "@/components/Playground/Sidebar/AppSidebar";
 import EditorArea from "@/components/Playground/EditorArea";
 import { useSocketConnection } from "@/components/Playground/hooks/useSocketConnection";
@@ -24,6 +28,12 @@ export default function WorkspacePage() {
   const { terminalOpen, toggle: toggleTerminal } = useTerminalPanel();
 
   const language = activeFile ? getLanguage(activeFile.name) : "";
+
+  useGSAP(() => {
+    gsap.timeline({ defaults: { ease: "power2.out" } })
+      .from(".gsap-ws-sidebar", { opacity: 0, x: -12, duration: 0.45 })
+      .from(".gsap-ws-editor",  { opacity: 0, y: 8,   duration: 0.4 }, "-=0.25");
+  });
 
   return (
     <SidebarProvider

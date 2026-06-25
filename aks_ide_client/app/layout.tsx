@@ -5,7 +5,24 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "IDE",
-  description: "Cloud-based development environment",
+  description:
+    "A fully-functional Linux development environment in your browser. Real shell. Real editor. Real containers. No setup required.",
+  icons: { icon: "/favicon.svg" },
+  openGraph: {
+    title: "IDE - Cloud Development Environment",
+    description:
+      "Code anywhere. Ship everywhere. Real Linux shell, Monaco editor, isolated Docker containers. No setup required.",
+    images: [
+      { url: "/image.png", width: 1280, alt: "IDE workspace screenshot" },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "IDE - Cloud Development Environment",
+    description: "Code anywhere. Ship everywhere.",
+    images: ["/image.png"],
+  },
 };
 
 export default function RootLayout({
@@ -15,7 +32,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="bg-(--color-background) text-(--color-foreground) antialiased" suppressHydrationWarning>
+      <body
+        className="bg-(--color-background) text-(--color-foreground) antialiased"
+        suppressHydrationWarning
+      >
         <Providers>
           <Toaster
             position="bottom-center"

@@ -69,9 +69,8 @@ function AppSidebarInner({
   return (
     <Sidebar
       collapsible="icon"
-      className="overflow-hidden *:data-[sidebar=sidebar]:flex-row"
+      className="gsap-ws-sidebar overflow-hidden *:data-[sidebar=sidebar]:flex-row"
     >
-      {/* Icon rail */}
       <Sidebar
         collapsible="none"
         className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r"
@@ -148,7 +147,6 @@ function AppSidebarInner({
         </SidebarFooter>
       </Sidebar>
 
-      {/* Content panel */}
       <Sidebar
         collapsible="none"
         className="hidden flex-1 md:flex"

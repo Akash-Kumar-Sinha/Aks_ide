@@ -10,6 +10,7 @@ import { EditorBreadcrumb } from "./EditorBreadcrumb";
 import { getLanguage } from "./types";
 import type { OpenFile } from "./types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Logo } from "@/components/Logo/Logo";
 import { useInlineCompletion } from "./hooks/useInlineCompletion";
 
 interface CodeEditorProps {
@@ -106,18 +107,21 @@ const CodeEditor: React.FC<CodeEditorProps> = React.memo(
             />
           ) : (
             <div
-              className="flex flex-col items-center justify-center h-full gap-4"
+              className="flex flex-col items-center justify-center h-full gap-5"
               style={{
                 background:
                   "radial-gradient(ellipse at center, rgba(59,130,246,0.04) 0%, transparent 70%), var(--ide-surface)",
               }}
             >
-              <span className="text-3xl font-semibold tracking-widest uppercase bg-linear-to-r from-blue-500/50 to-zinc-600 bg-clip-text text-transparent select-none">
-                IDE
-              </span>
-              <p className="text-xs text-zinc-700 select-none">
-                Open a file from the explorer to start editing
-              </p>
+              <Logo className="w-8 h-8 text-white/10" />
+              <div className="flex flex-col items-center gap-1.5">
+                <span className="text-xs font-semibold text-white/20 tracking-widest uppercase select-none">
+                  IDE
+                </span>
+                <p className="text-[11px] text-zinc-700 select-none">
+                  Open a file from the explorer to start editing
+                </p>
+              </div>
             </div>
           )}
         </div>

@@ -37,8 +37,6 @@ apiClient.interceptors.response.use(
         await refreshInFlight;
         return apiClient(original);
       } catch {
-        // Let page-level AuthProtect handle the redirect — redirecting here
-        // fires even on public pages like the landing page.
       }
     }
 
